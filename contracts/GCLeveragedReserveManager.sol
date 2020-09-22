@@ -5,6 +5,8 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
 import { G } from "./G.sol";
 
+import { $ } from "./network/$.sol";
+
 library GCLeveragedReserveManager
 {
 	using SafeMath for uint256;
@@ -87,6 +89,8 @@ library GCLeveragedReserveManager
 	{
 		uint256 _availableAmount = _self._getAvailableUnderlying();
 		for (uint256 _i; _i < DELEVERAGING_UNROLL_LIMIT; _i++) {
+			$.debug("ensureLiquidity::_i", _i);
+			$.debug("ensureLiquidity::_availableAmount", _availableAmount);
 			if (_requiredAmount <= _availableAmount) return true;
 			_success = _self._decreaseLeverage(_requiredAmount.sub(_availableAmount));
 			if (!_success) return false;
@@ -110,10 +114,14 @@ library GCLeveragedReserveManager
 	function adjustLeverage(Self storage _self) public returns (bool _success)
 	{
 		uint256 _borrowAmount = _self._calcConversionUnderlyingToBorrowGivenBorrow(G.fetchBorrowAmount(_self.leverageToken));
+		$.debug("adjustLeverage::_borrowAmount", _borrowAmount);
 		if (!_self.leverageEnabled) return _self._decreaseLeverageLimited(_borrowAmount);
 		uint256 _lendAmount = G.fetchLendAmount(_self.reserveToken);
+		$.debug("adjustLeverage::_lendAmount", _lendAmount);
 		uint256 _idealAmount = _self._calcIdealAmount(_lendAmount);
+		$.debug("adjustLeverage::_idealAmount", _idealAmount);
 		uint256 _deviationAmount = _self._calcDeviationAmount(_lendAmount);
+		$.debug("adjustLeverage::_deviationAmount", _deviationAmount);
 		if (_borrowAmount < _idealAmount.sub(_deviationAmount)) return _self._increaseLeverageLimited(_idealAmount.sub(_borrowAmount));
 		if (_borrowAmount > _idealAmount.add(_deviationAmount)) return _self._decreaseLeverageLimited(_borrowAmount.sub(_idealAmount));
 		return true;
@@ -169,9 +177,16 @@ library GCLeveragedReserveManager
 
 	function _increaseLeverage(Self storage _self, uint256 _amount) internal returns (bool _success)
 	{
-		bool _success1 = G.borrow(_self.leverageToken, G.min(_self._calcConversionUnderlyingToBorrowGivenUnderlying(_amount), _self._getAvailableBorrow()));
+		$.debug("_increaseLeverage::_amount", _amount);
+		uint256 _convertedAmount = _self._calcConversionUnderlyingToBorrowGivenUnderlying(_amount);
+		$.debug("_increaseLeverage::_convertedAmount", _convertedAmount);
+		uint256 _availableAmount = _self._getAvailableBorrow();
+		$.debug("_increaseLeverage::_availableAmount", _availableAmount);
+		bool _success1 = G.borrow(_self.leverageToken, G.min(_convertedAmount, _availableAmount));
+		$.debug("_increaseLeverage::_success1", _success1 ? 1 : 0);
 		_self._convertBorrowToUnderlying(G.getBalance(_self.borrowToken));
 		bool _success2 = G.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
+		$.debug("_increaseLeverage::_success2", _success2 ? 1 : 0);
 		_self._convertUnderlyingToBorrow(G.getBalance(_self.underlyingToken));
 		G.repay(_self.leverageToken, G.min(G.getBalance(_self.borrowToken), G.getBorrowAmount(_self.leverageToken)));
 		return _success1 && _success2;
@@ -179,9 +194,16 @@ library GCLeveragedReserveManager
 
 	function _decreaseLeverage(Self storage _self, uint256 _amount) internal returns (bool _success)
 	{
-		bool _success1 = G.redeem(_self.reserveToken, G.min(_self._calcConversionUnderlyingToBorrowGivenBorrow(_self._calcConversionBorrowToUnderlyingGivenUnderlying(_amount)), _self._getAvailableUnderlying()));
+		$.debug("_decreaseLeverage::_amount", _amount);
+		uint256 _convertedAmount = _self._calcConversionUnderlyingToBorrowGivenBorrow(_self._calcConversionBorrowToUnderlyingGivenUnderlying(_amount));
+		$.debug("_decreaseLeverage::_convertedAmount", _convertedAmount);
+		uint256 _availableAmount = _self._getAvailableUnderlying();
+		$.debug("_decreaseLeverage::_availableAmount", _availableAmount);
+		bool _success1 = G.redeem(_self.reserveToken, G.min(_convertedAmount, _availableAmount));
+		$.debug("_decreaseLeverage::_success1", _success1 ? 1 : 0);
 		_self._convertUnderlyingToBorrow(G.getBalance(_self.underlyingToken));
 		bool _success2 = G.repay(_self.leverageToken, G.min(G.getBalance(_self.borrowToken), G.getBorrowAmount(_self.leverageToken)));
+		$.debug("_decreaseLeverage::_success2", _success2 ? 1 : 0);
 		_self._convertBorrowToUnderlying(G.getBalance(_self.borrowToken));
 		G.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
 		return _success1 && _success2;
