@@ -14,11 +14,16 @@ abstract contract GTokenBase is ERC20, Ownable, ReentrancyGuard, GToken
 {
 	using GLiquidityPoolManager for GLiquidityPoolManager.Self;
 
-	uint256 constant DEPOSIT_FEE = 1e16; // 1%
-	uint256 constant WITHDRAWAL_FEE = 1e16; // 1%
+	uint256 constant DEFAULT_DEPOSIT_FEE = 1e16; // 1%
+	uint256 constant DEFAULT_WITHDRAWAL_FEE = 1e16; // 1%
+	uint256 constant MAXIMUM_DEPOSIT_FEE = 2e16; // 2%
+	uint256 constant MAXIMUM_WITHDRAWAL_FEE = 2e16; // 2%
 
 	address public immutable override stakesToken;
 	address public immutable override reserveToken;
+
+	uint256 private operatingDepositFee = DEFAULT_DEPOSIT_FEE;
+	uint256 private operatingWithdrawalFee = DEFAULT_WITHDRAWAL_FEE;
 
 	GLiquidityPoolManager.Self lpm;
 
@@ -57,11 +62,11 @@ abstract contract GTokenBase is ERC20, Ownable, ReentrancyGuard, GToken
 	}
 
 	function depositFee() public view override returns (uint256 _depositFee) {
-		return lpm.hasPool() ? DEPOSIT_FEE : 0;
+		return lpm.hasPool() ? operatingDepositFee : 0;
 	}
 
 	function withdrawalFee() public view override returns (uint256 _withdrawalFee) {
-		return lpm.hasPool() ? WITHDRAWAL_FEE : 0;
+		return lpm.hasPool() ? operatingWithdrawalFee : 0;
 	}
 
 	function liquidityPool() public view override returns (address _liquidityPool)
@@ -114,6 +119,16 @@ abstract contract GTokenBase is ERC20, Ownable, ReentrancyGuard, GToken
 		_burn(_from, _grossShares);
 		_mint(address(this), _feeShares.div(2));
 		lpm.gulpPoolAssets();
+	}
+
+	function setFees(uint256 _depositFee, uint256 _withdrawalFee) public override onlyOwner nonReentrant
+	{
+		require(lpm.hasPool(), "pool must be available");
+		require(_depositFee <= MAXIMUM_DEPOSIT_FEE, "deposit fee exceeds the limit");
+		require(_withdrawalFee <= MAXIMUM_WITHDRAWAL_FEE, "withdrawal fee exceeds the limit");
+		operatingDepositFee = _depositFee;
+		operatingWithdrawalFee = _withdrawalFee;
+		emit UpdateFees(_depositFee, _withdrawalFee);
 	}
 
 	function allocateLiquidityPool(uint256 _stakesAmount, uint256 _sharesAmount) public override onlyOwner nonReentrant
