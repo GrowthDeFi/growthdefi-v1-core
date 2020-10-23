@@ -51,19 +51,19 @@ library CompoundLendingMarketAbstraction
 		return Math._min(_liquidityAmount.sub(_marginAmount), _getMarketAmount(_ctoken));
 	}
 
-	function _getExchangeRate(address _ctoken) internal view returns (uint256 _exchangeRate)
+	function _exchangeRateStored(address _ctoken) internal view returns (uint256 _exchangeRate)
 	{
 		return CToken(_ctoken).exchangeRateStored();
 	}
 
-	function _fetchExchangeRate(address _ctoken) internal returns (uint256 _exchangeRate)
+	function _exchangeRateCurrent(address _ctoken) internal returns (uint256 _exchangeRate)
 	{
 		return CToken(_ctoken).exchangeRateCurrent();
 	}
 
-	function _getLendAmount(address _ctoken) internal view returns (uint256 _amount)
+	function _calcLendAmount(address _ctoken) internal view returns (uint256 _amount)
 	{
-		return CToken(_ctoken).balanceOf(address(this)).mul(_getExchangeRate(_ctoken)).div(1e18);
+		return CToken(_ctoken).balanceOf(address(this)).mul(_exchangeRateStored(_ctoken)).div(1e18);
 	}
 
 	function _fetchLendAmount(address _ctoken) internal returns (uint256 _amount)
@@ -71,12 +71,12 @@ library CompoundLendingMarketAbstraction
 		return CToken(_ctoken).balanceOfUnderlying(address(this));
 	}
 
-	function _getBorrowAmount(address _ctoken) internal view returns (uint256 _amount)
+	function _borrowBalanceStored(address _ctoken) internal view returns (uint256 _amount)
 	{
 		return CToken(_ctoken).borrowBalanceStored(address(this));
 	}
 
-	function _fetchBorrowAmount(address _ctoken) internal returns (uint256 _amount)
+	function _borrowBalanceCurrent(address _ctoken) internal returns (uint256 _amount)
 	{
 		return CToken(_ctoken).borrowBalanceCurrent(address(this));
 	}

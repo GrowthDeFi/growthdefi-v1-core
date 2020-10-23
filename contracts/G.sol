@@ -52,12 +52,12 @@ library G
 //	function getMarketAmount(address _ctoken) public view returns (uint256 _marketAmount) { return CompoundLendingMarketAbstraction._getMarketAmount(_ctoken); }
 	function getLiquidityAmount(address _ctoken) public view returns (uint256 _liquidityAmount) { return CompoundLendingMarketAbstraction._getLiquidityAmount(_ctoken); }
 //	function getAvailableAmount(address _ctoken, uint256 _marginAmount) public view returns (uint256 _availableAmount) { return CompoundLendingMarketAbstraction._getAvailableAmount(_ctoken, _marginAmount); }
-	function getExchangeRate(address _ctoken) public view returns (uint256 _exchangeRate) { return CompoundLendingMarketAbstraction._getExchangeRate(_ctoken); }
-	function fetchExchangeRate(address _ctoken) public returns (uint256 _exchangeRate) { return CompoundLendingMarketAbstraction._fetchExchangeRate(_ctoken); }
-	function getLendAmount(address _ctoken) public view returns (uint256 _amount) { return CompoundLendingMarketAbstraction._getLendAmount(_ctoken); }
+	function exchangeRateStored(address _ctoken) public view returns (uint256 _exchangeRate) { return CompoundLendingMarketAbstraction._exchangeRateStored(_ctoken); }
+	function exchangeRateCurrent(address _ctoken) public returns (uint256 _exchangeRate) { return CompoundLendingMarketAbstraction._exchangeRateCurrent(_ctoken); }
+	function calcLendAmount(address _ctoken) public view returns (uint256 _amount) { return CompoundLendingMarketAbstraction._calcLendAmount(_ctoken); }
 	function fetchLendAmount(address _ctoken) public returns (uint256 _amount) { return CompoundLendingMarketAbstraction._fetchLendAmount(_ctoken); }
-	function getBorrowAmount(address _ctoken) public view returns (uint256 _amount) { return CompoundLendingMarketAbstraction._getBorrowAmount(_ctoken); }
-	function fetchBorrowAmount(address _ctoken) public returns (uint256 _amount) { return CompoundLendingMarketAbstraction._fetchBorrowAmount(_ctoken); }
+	function borrowBalanceStored(address _ctoken) public view returns (uint256 _amount) { return CompoundLendingMarketAbstraction._borrowBalanceStored(_ctoken); }
+	function borrowBalanceCurrent(address _ctoken) public returns (uint256 _amount) { return CompoundLendingMarketAbstraction._borrowBalanceCurrent(_ctoken); }
 //	function enter(address _ctoken) public returns (bool _success) { return CompoundLendingMarketAbstraction._enter(_ctoken); }
 	function lend(address _ctoken, uint256 _amount) public returns (bool _success) { return CompoundLendingMarketAbstraction._lend(_ctoken, _amount); }
 	function redeem(address _ctoken, uint256 _amount) public returns (bool _success) { return CompoundLendingMarketAbstraction._redeem(_ctoken, _amount); }

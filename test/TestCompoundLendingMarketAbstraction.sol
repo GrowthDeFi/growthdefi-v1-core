@@ -32,7 +32,7 @@ contract TestCompoundLendingMarketAbstraction is Env
 		Assert.equal(_getBalance(DAI), 100e18, "DAI balance must be 100e18");
 		Assert.equal(_getBalance(cDAI), 0e8, "cDAI balance must be 0e8");
 
-		uint256 _exchangeRate = CompoundLendingMarketAbstraction._fetchExchangeRate(cDAI);
+		uint256 _exchangeRate = CompoundLendingMarketAbstraction._exchangeRateCurrent(cDAI);
 		uint256 _amountcDAI = GCFormulae._calcCostFromUnderlyingCost(100e18, _exchangeRate);
 
 		CompoundLendingMarketAbstraction._safeLend(cDAI, 100e18);
@@ -50,7 +50,7 @@ contract TestCompoundLendingMarketAbstraction is Env
 		Assert.equal(_getBalance(DAI), 0e18, "DAI balance must be 0e18");
 		Assert.equal(_getBalance(cDAI), 5000e8, "cDAI balance must be 5000e8");
 
-		uint256 _exchangeRate = CompoundLendingMarketAbstraction._fetchExchangeRate(cDAI);
+		uint256 _exchangeRate = CompoundLendingMarketAbstraction._exchangeRateCurrent(cDAI);
 		uint256 _amountDAI = GCFormulae._calcUnderlyingCostFromCost(5000e8, _exchangeRate);
 		uint256 _amountcDAI = GCFormulae._calcCostFromUnderlyingCost(_amountDAI, _exchangeRate);
 
@@ -72,7 +72,7 @@ contract TestCompoundLendingMarketAbstraction is Env
 		Assert.equal(_getBalance(USDC), 0e6, "USDC balance must be 0e6");
 		Assert.equal(_getBalance(cUSDC), 0e8, "cUSDC balance must be 0e8");
 
-		uint256 _exchangeRate = CompoundLendingMarketAbstraction._fetchExchangeRate(cDAI);
+		uint256 _exchangeRate = CompoundLendingMarketAbstraction._exchangeRateCurrent(cDAI);
 		uint256 _amountcDAI = GCFormulae._calcCostFromUnderlyingCost(100e18, _exchangeRate);
 
 		CompoundLendingMarketAbstraction._safeLend(cDAI, 100e18);
@@ -85,13 +85,13 @@ contract TestCompoundLendingMarketAbstraction is Env
 
 		Assert.equal(_getBalance(USDC), 50e6, "USDC balance must be 50e6");
 		Assert.equal(_getBalance(cUSDC), 0e8, "cUSDC balance must be 0e8");
-		Assert.equal(CompoundLendingMarketAbstraction._fetchBorrowAmount(cUSDC), 50e6, "USDC borrow balance must be 50e6");
+		Assert.equal(CompoundLendingMarketAbstraction._borrowBalanceCurrent(cUSDC), 50e6, "USDC borrow balance must be 50e6");
 
 		CompoundLendingMarketAbstraction._safeRepay(cUSDC, 50e6);
 
 		Assert.equal(_getBalance(USDC), 0e6, "USDC balance must be 0e6");
 		Assert.equal(_getBalance(cUSDC), 0e8, "cUSDC balance must be 0e8");
-		Assert.equal(CompoundLendingMarketAbstraction._fetchBorrowAmount(cUSDC), 0e6, "USDC borrow balance must be 0e6");
+		Assert.equal(CompoundLendingMarketAbstraction._borrowBalanceCurrent(cUSDC), 0e6, "USDC borrow balance must be 0e6");
 
 		CompoundLendingMarketAbstraction._safeRedeem(cDAI, 100e18);
 
@@ -165,7 +165,7 @@ contract TestCompoundLendingMarketAbstraction is Env
 
 		Assert.equal(_getBalance(DAI), 0e18, "DAI balance must be 0e18");
 
-		uint256 _lendAmount = CompoundLendingMarketAbstraction._getLendAmount(cDAI);
+		uint256 _lendAmount = CompoundLendingMarketAbstraction._calcLendAmount(cDAI);
 		Assert.isAtLeast(_lendAmount, 16999e16, "DAI balance must be at lest 16999e16");
 
 		CompoundLendingMarketAbstraction._safeRedeem(cDAI, _lendAmount);
@@ -181,7 +181,7 @@ contract TestCompoundLendingMarketAbstraction is Env
 		Assert.equal(_getBalance(WETH), 1e18, "WETH balance must be 1e18");
 		Assert.equal(_getBalance(cETH), 0e8, "cETH balance must be 0e8");
 
-		uint256 _exchangeRate = CompoundLendingMarketAbstraction._fetchExchangeRate(cETH);
+		uint256 _exchangeRate = CompoundLendingMarketAbstraction._exchangeRateCurrent(cETH);
 		uint256 _amountcETH = GCFormulae._calcCostFromUnderlyingCost(1e18, _exchangeRate);
 
 		CompoundLendingMarketAbstraction._safeLend(cETH, 1e18);
@@ -199,7 +199,7 @@ contract TestCompoundLendingMarketAbstraction is Env
 		Assert.equal(_getBalance(WETH), 0e18, "WETH balance must be 0e18");
 		Assert.equal(_getBalance(cETH), 25e8, "cETH balance must be 25e8");
 
-		uint256 _exchangeRate = CompoundLendingMarketAbstraction._fetchExchangeRate(cETH);
+		uint256 _exchangeRate = CompoundLendingMarketAbstraction._exchangeRateCurrent(cETH);
 		uint256 _amountETH = GCFormulae._calcUnderlyingCostFromCost(25e8, _exchangeRate);
 		uint256 _amountcETH = GCFormulae._calcCostFromUnderlyingCost(_amountETH, _exchangeRate);
 
@@ -217,7 +217,7 @@ contract TestCompoundLendingMarketAbstraction is Env
 		Assert.equal(_getBalance(WETH), 1e18, "WETH balance must be 1e18");
 		Assert.equal(_getBalance(cETH), 0e8, "cETH balance must be 0e8");
 
-		uint256 _exchangeRate = CompoundLendingMarketAbstraction._fetchExchangeRate(cETH);
+		uint256 _exchangeRate = CompoundLendingMarketAbstraction._exchangeRateCurrent(cETH);
 		uint256 _amountcETH = GCFormulae._calcCostFromUnderlyingCost(1e18, _exchangeRate);
 
 		CompoundLendingMarketAbstraction._safeLend(cETH, 1e18);
@@ -229,12 +229,12 @@ contract TestCompoundLendingMarketAbstraction is Env
 		CompoundLendingMarketAbstraction._safeBorrow(cETH, 1e17);
 
 		Assert.equal(_getBalance(WETH), 1e17, "WETH balance must be 1e17");
-		Assert.equal(CompoundLendingMarketAbstraction._fetchBorrowAmount(cETH), 1e17, "WETH borrow balance must be 1e17");
+		Assert.equal(CompoundLendingMarketAbstraction._borrowBalanceCurrent(cETH), 1e17, "WETH borrow balance must be 1e17");
 
 		CompoundLendingMarketAbstraction._safeRepay(cETH, 1e17);
 
 		Assert.equal(_getBalance(WETH), 0e6, "WETH balance must be 0e18");
-		Assert.equal(CompoundLendingMarketAbstraction._fetchBorrowAmount(cETH), 0e18, "WETH borrow balance must be 0e18");
+		Assert.equal(CompoundLendingMarketAbstraction._borrowBalanceCurrent(cETH), 0e18, "WETH borrow balance must be 0e18");
 
 		CompoundLendingMarketAbstraction._safeRedeem(cETH, 1e18);
 

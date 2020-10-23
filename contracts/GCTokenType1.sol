@@ -247,7 +247,7 @@ contract GCTokenType1 is GCTokenBase, GFlashBorrower
 	 */
 	function _prepareWithdrawal(uint256 _cost) internal override mayFlashBorrow returns (bool _success)
 	{
-		return lrm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, G.fetchExchangeRate(reserveToken)));
+		return lrm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, G.exchangeRateCurrent(reserveToken)));
 	}
 
 	/**

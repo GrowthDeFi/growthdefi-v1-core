@@ -175,7 +175,7 @@ library GCLeveragedReserveManager
 	{
 		// the reserve is the diference between lend and borrow
 		uint256 _lendAmount = G.fetchLendAmount(_self.reserveToken);
-		uint256 _borrowAmount = G.fetchBorrowAmount(_self.reserveToken);
+		uint256 _borrowAmount = G.borrowBalanceCurrent(_self.reserveToken);
 		uint256 _reserveAmount = _lendAmount.sub(_borrowAmount);
 		// caps the room in case it is larger than the reserve
 		_roomAmount = G.min(_roomAmount, _reserveAmount);

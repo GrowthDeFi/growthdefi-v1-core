@@ -108,7 +108,7 @@ library GCDelegatedReserveManager
 
 	function _gulpGrowthAssets(Self storage _self) internal returns (bool _success)
 	{
-		uint256 _borrowAmount = G.fetchBorrowAmount(_self.growthReserveToken);
+		uint256 _borrowAmount = G.borrowBalanceCurrent(_self.growthReserveToken);
 		uint256 _redeemableAmount = _self._calcUnderlyingCostFromShares(G.getBalance(_self.growthToken));
 		if (_redeemableAmount <= _borrowAmount) return true;
 		uint256 _growthAmount = _redeemableAmount.sub(_borrowAmount);
@@ -136,7 +136,7 @@ library GCDelegatedReserveManager
 			uint256 _newAvailableAmount = _newReserveAmount.mul(_collateralRatio).div(1e18);
 			_scallingRatio = _availableAmount > 0 ? uint256(1e18).mul(_newAvailableAmount).div(_availableAmount) : 1e18;
 		}
-		uint256 _borrowAmount = G.fetchBorrowAmount(_self.growthReserveToken);
+		uint256 _borrowAmount = G.borrowBalanceCurrent(_self.growthReserveToken);
 		uint256 _newBorrowAmount;
 		uint256 _minBorrowAmount;
 		uint256 _maxBorrowAmount;

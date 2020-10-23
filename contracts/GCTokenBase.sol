@@ -147,7 +147,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	 */
 	function exchangeRate() public view override returns (uint256 _exchangeRate)
 	{
-		return G.getExchangeRate(reserveToken);
+		return G.exchangeRateStored(reserveToken);
 	}
 
 	/**
@@ -168,7 +168,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	 */
 	function lendingReserveUnderlying() public view virtual override returns (uint256 _lendingReserveUnderlying)
 	{
-		return G.getLendAmount(reserveToken);
+		return G.calcLendAmount(reserveToken);
 	}
 
 	/**
@@ -179,7 +179,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	 */
 	function borrowingReserveUnderlying() public view virtual override returns (uint256 _borrowingReserveUnderlying)
 	{
-		return G.getBorrowAmount(reserveToken);
+		return G.borrowBalanceStored(reserveToken);
 	}
 
 	/**
@@ -222,7 +222,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 		uint256 _underlyingCost = GCFormulae._calcUnderlyingCostFromCost(_cost, exchangeRate());
 		require(_underlyingCost > 0, "underlying cost must be greater than 0");
 		require(_prepareWithdrawal(_cost), "not available at the moment");
-		_underlyingCost = G.min(_underlyingCost, G.getLendAmount(reserveToken));
+		_underlyingCost = G.min(_underlyingCost, G.calcLendAmount(reserveToken));
 		G.safeRedeem(reserveToken, _underlyingCost);
 		G.pushFunds(underlyingToken, _from, _underlyingCost);
 		_burn(_from, _grossShares);

@@ -22,10 +22,10 @@ contract GCTokenType2 is GCTokenBase
 
 	function borrowingReserveUnderlying() public view override returns (uint256 _borrowingReserveUnderlying)
 	{
-		uint256 _lendAmount = G.getLendAmount(reserveToken);
+		uint256 _lendAmount = G.calcLendAmount(reserveToken);
 		uint256 _availableAmount = _lendAmount.mul(G.getCollateralRatio(reserveToken)).div(1e18);
 		address _growthReserveToken = GCToken(growthToken).reserveToken();
-		uint256 _borrowAmount = G.getBorrowAmount(_growthReserveToken);
+		uint256 _borrowAmount = G.borrowBalanceStored(_growthReserveToken);
 		uint256 _freeAmount = G.getLiquidityAmount(_growthReserveToken);
 		uint256 _totalAmount = _borrowAmount.add(_freeAmount);
 		return _totalAmount > 0 ? _availableAmount.mul(_borrowAmount).div(_totalAmount) : 0;
@@ -78,6 +78,6 @@ contract GCTokenType2 is GCTokenBase
 
 	function _prepareWithdrawal(uint256 _cost) internal override returns (bool _success)
 	{
-		return drm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, G.fetchExchangeRate(reserveToken)));
+		return drm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, G.exchangeRateCurrent(reserveToken)));
 	}
 }
