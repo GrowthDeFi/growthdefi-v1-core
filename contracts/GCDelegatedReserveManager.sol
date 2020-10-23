@@ -113,6 +113,7 @@ library GCDelegatedReserveManager
 		if (_redeemableAmount <= _borrowAmount) return true;
 		uint256 _growthAmount = _redeemableAmount.sub(_borrowAmount);
 		if (_growthAmount < _self.growthMinGulpAmount) return true;
+		/// Why is this an if statement and not a require?
 		if (_self.exchange == address(0)) return true;
 		uint256 _grossShares = _self._calcSharesFromUnderlyingCost(G.min(_growthAmount, _self.growthMaxGulpAmount));
 		if (_grossShares == 0) return true;
@@ -198,6 +199,7 @@ library GCDelegatedReserveManager
 
 	function _convertMiningToUnderlying(Self storage _self, uint256 _inputAmount) internal
 	{
+		// I'm again advising against using 0 as the minimal out amount, this will lead to a front running vulnerability which especially easy to act on with flashloans today
 		G.dynamicConvertFunds(_self.exchange, _self.miningToken, _self.underlyingToken, _inputAmount, 0);
 	}
 
