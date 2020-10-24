@@ -125,6 +125,9 @@ library GCDelegatedReserveManager
 		}
 	}
 
+	// I don't know if it's due to contract size limitations but perhaps this function would be better if split into 2 
+	// since the branching seems to be determined entierly by the roomAmount which is 0 for deposits and non zero for withdrawls. 
+	// Obviously this could also apply for the leveraged reserve manager
 	function _adjustReserve(Self storage _self, uint256 _roomAmount) internal returns (bool _success)
 	{
 		uint256 _scallingRatio;
@@ -135,6 +138,7 @@ library GCDelegatedReserveManager
 			uint256 _collateralRatio = _self._calcCollateralizationRatio();
 			uint256 _availableAmount = _reserveAmount.mul(_collateralRatio).div(1e18);
 			uint256 _newAvailableAmount = _newReserveAmount.mul(_collateralRatio).div(1e18);
+			// Seems like you could avoid calculating newAvailableAmount and availableAmount nad just use the reserve amounts
 			_scallingRatio = _availableAmount > 0 ? uint256(1e18).mul(_newAvailableAmount).div(_availableAmount) : 1e18;
 		}
 		uint256 _borrowAmount = G.fetchBorrowAmount(_self.growthReserveToken);
