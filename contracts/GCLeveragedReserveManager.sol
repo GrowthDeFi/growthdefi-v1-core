@@ -3,6 +3,8 @@ pragma solidity ^0.6.0;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
+import { CompoundLendingMarketAbstraction } from "./modules/CompoundLendingMarketAbstraction.sol";
+
 import { G } from "./G.sol";
 
 /**
@@ -57,7 +59,7 @@ library GCLeveragedReserveManager
 		_self.collateralizationRatio = DEFAULT_COLLATERALIZATION_RATIO;
 		_self.collateralizationMargin = DEFAULT_COLLATERALIZATION_MARGIN;
 
-		G.safeEnter(_reserveToken);
+		CompoundLendingMarketAbstraction._safeEnter(_reserveToken);
 	}
 
 	/**
@@ -196,8 +198,24 @@ library GCLeveragedReserveManager
 		// adjust the reserve by:
 		// 1- increasing collateralization by the difference
 		// 2- decreasing collateralization by the difference
-		if (_minNewLendAmount > _oldLendAmount) return _self._dispatchFlashLoan(_newLendAmount.sub(_oldLendAmount), 1);
-		if (_maxNewLendAmount < _oldLendAmount) return _self._dispatchFlashLoan(_oldLendAmount.sub(_newLendAmount), 2);
+		// the adjustment is capped by the liquidity available on the market
+		uint256 _liquidityAmount = G.getFlashLoanLiquidity(_self.underlyingToken);
+		if (_minNewLendAmount > _oldLendAmount) {
+			{
+				uint256 _minAmount = _minNewLendAmount.sub(_oldLendAmount);
+				require(_liquidityAmount >= _minAmount, "cannot maintain collateralization ratio");
+			}
+			uint256 _amount = _newLendAmount.sub(_oldLendAmount);
+			return _self._dispatchFlashLoan(G.min(_amount, _liquidityAmount), 1);
+		}
+		if (_maxNewLendAmount < _oldLendAmount) {
+			{
+				uint256 _minAmount = _oldLendAmount.sub(_maxNewLendAmount);
+				require(_liquidityAmount >= _minAmount, "cannot maintain collateralization ratio");
+			}
+			uint256 _amount = _oldLendAmount.sub(_newLendAmount);
+			return _self._dispatchFlashLoan(G.min(_amount, _liquidityAmount), 2);
+		}
 		return true;
 	}
 

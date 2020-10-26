@@ -3,6 +3,8 @@ pragma solidity ^0.6.0;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
+import { CompoundLendingMarketAbstraction } from "./modules/CompoundLendingMarketAbstraction.sol";
+
 import { GCToken } from "./GCToken.sol";
 import { G } from "./G.sol";
 
@@ -54,7 +56,7 @@ library GCDelegatedReserveManager
 		_self.collateralizationRatio = DEFAULT_COLLATERALIZATION_RATIO;
 		_self.collateralizationMargin = DEFAULT_COLLATERALIZATION_MARGIN;
 
-		G.safeEnter(_reserveToken);
+		CompoundLendingMarketAbstraction._safeEnter(_reserveToken);
 	}
 
 	function setExchange(Self storage _self, address _exchange) public

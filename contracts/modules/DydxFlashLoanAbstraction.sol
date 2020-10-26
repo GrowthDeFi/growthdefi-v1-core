@@ -3,6 +3,7 @@ pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import { Transfers } from "./Transfers.sol";
 
@@ -17,6 +18,12 @@ library DydxFlashLoanAbstraction
 	function _estimateFlashLoanFee(address /* _token */, uint256 /* _netAmount */) internal pure returns (uint256 _feeAmount)
 	{
 		return 2;
+	}
+
+	function _getFlashLoanLiquidity(address _token) internal view returns (uint256 _liquidityAmount)
+	{
+		address _solo = $.Dydx_SOLO_MARGIN;
+		return IERC20(_token).balanceOf(_solo);
 	}
 
 	function _requestFlashLoan(address _token, uint256 _netAmount, bytes memory _context) internal returns (bool _success)
