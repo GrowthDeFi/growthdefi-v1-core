@@ -5,6 +5,12 @@
 This repository contains the source code for the GrowthDeFi smart contracts
 (Version 1) and related support code for testing and monitoring the contracts.
 
+## Deployed Contracts
+
+| Token | Mainnet Address                                                                                                       |
+| ----- | --------------------------------------------------------------------------------------------------------------------- |
+| gcDAI | [0x67C713424295F81548C93bBD280474218C1b5a8B](https://etherscan.io/address/0x67C713424295F81548C93bBD280474218C1b5a8B) |
+
 ## Repository Organization
 
 * [/contracts/](contracts). This folder is where the smart contract source code

@@ -1,7 +1,7 @@
 const G = artifacts.require('G');
 const GLiquidityPoolManager = artifacts.require('GLiquidityPoolManager');
 const GCDelegatedReserveManager = artifacts.require('GCDelegatedReserveManager');
-const gcDAI = artifacts.require('gcDAI');
+const gcUSDC = artifacts.require('gcUSDC');
 const gcZRX = artifacts.require('gcZRX');
 const GSushiswapExchange = artifacts.require('GSushiswapExchange');
 const GUniswapV2Exchange = artifacts.require('GUniswapV2Exchange');
@@ -13,7 +13,7 @@ module.exports = async (deployer, network) => {
   deployer.link(G, gcZRX);
   deployer.link(GLiquidityPoolManager, gcZRX);
   deployer.link(GCDelegatedReserveManager, gcZRX);
-  const gctoken = await gcDAI.deployed();
+  const gctoken = await gcUSDC.deployed();
   await deployer.deploy(gcZRX, gctoken.address);
   let exchange
   if (['mainnet', 'development', 'testing'].includes(network)) {
