@@ -131,6 +131,7 @@ library GCDelegatedReserveManager
 			uint256 _reserveAmount = G.fetchLendAmount(_self.reserveToken);
 			_roomAmount = G.min(_roomAmount, _reserveAmount);
 			uint256 _newReserveAmount = _reserveAmount.sub(_roomAmount);
+			// TODO review if this is necessary (r1 * c) / (r2 * c) => r1 / r2 (if c > 0)
 			uint256 _collateralRatio = _self._calcCollateralizationRatio();
 			uint256 _availableAmount = _reserveAmount.mul(_collateralRatio).div(1e18);
 			uint256 _newAvailableAmount = _newReserveAmount.mul(_collateralRatio).div(1e18);
