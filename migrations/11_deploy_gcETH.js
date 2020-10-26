@@ -41,5 +41,5 @@ module.exports = async (deployer, network) => {
     await token.allocateLiquidityPool(samount, gamount);
   }
   const registry = await GTokenRegistry.deployed();
-  await registry.registerNewToken(token.address);
+  await registry.registerNewToken(token.address, '0x0000000000000000000000000000000000000000');
 };

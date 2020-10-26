@@ -12,11 +12,13 @@ contract GTokenRegistry is Ownable
 	/**
 	 * @notice Registers a new gToken.
 	 * @param _growthToken The address of the token being registered.
+	 * @param _oldGrowthToken The address of the token implementation
+	 *                        being replaced, for upgrades, or 0x0 0therwise.
 	 */
-	function registerNewToken(address _growthToken) public onlyOwner
+	function registerNewToken(address _growthToken, address _oldGrowthToken) public onlyOwner
 	{
-		emit NewToken(_growthToken);
+		emit NewToken(_growthToken, _oldGrowthToken);
 	}
 
-	event NewToken(address indexed _growthToken);
+	event NewToken(address indexed _growthToken, address indexed _oldGrowthToken);
 }
