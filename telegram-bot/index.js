@@ -238,7 +238,7 @@ async function checkVitals(gctoken) {
 }
 
 async function main(args) {
-  const names = ['gcDAI', 'gcUSDC'];
+  const names = ['gcDAI', 'gcUSDC', 'gcUSDT', 'gcETH', 'gcWBTC', 'gcBAT', 'gcZRX', 'gcUNI'];
 
   const gctokens = [];
   for (const name of names) {

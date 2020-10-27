@@ -84,9 +84,9 @@ presented below. Their actual functionality is described in the next section.
   filling in the specific details purposedly left open. These provide the
   final/leaf contracts in the gTokens hierarchy. At the moment these comprise
   the gcTokens implemented in two flavors: Type 1 gcTokens
-  [GCTokenType1.sol](contracts/GCTokenType1.sol); and Type 2 gcTokens.
-  _Note that the Type 2 is currently under development and should not yet be
-  regarded as final._
+  [GCTokenType1.sol](contracts/GCTokenType1.sol); and Type 2 gcTokens
+  [GCTokenType2.sol](contracts/GCTokenType2.sol). _Note that the Type 2 is
+  currently under development and should not yet be regarded as final._
 * **Component contracts as (public) libraries** that provide core functionality
   implementation. Besides properly encapsulating the functionality they also
   allow working around the contract size limitations of the EVM.
@@ -96,8 +96,14 @@ presented below. Their actual functionality is described in the next section.
   leveraged reserve management/handling where flash loans are used to maintain
   the desired leverage level over lending/borrowing of the reserve of cTokens
   (used by Type 1 gcTokens);
+  [GCDelegatedReserveManager.sol](contracts/GCDelegatedReserveManager.sol) for
+  delegated reserve management/handling where borrowing is employed to mint
+  Type 1 gcTokens that are used to maintain and grow the cToken reserve
+  (used by Type 2 gcTokens);
 * **A single entrypoint file** [GTokens.sol](contracts/GTokens.sol) that succinctly declares
-  all the available gTokens: gcDAI, gcUSDC (of Type 1).
+  all the available gTokens: gcDAI, gcUSDC, gcUSDT (of Type 1) and gcETH,
+  gcWBTC, gcBAT, gcZRX and gcUNI (of Type 2). _Note that the Type 2 is
+  currently under development and should not yet be regarded as final._
 * **A public library** [G.sol](contracts/G.sol) that compiles and serves as
   entrypoint to all the relevant functions available under the
   [/modules/](contracts/modules) folder. This library exists mostly to work
@@ -130,6 +136,13 @@ hierarchy:
     * gcToken (Type 1)
       * gcDAI
       * gcUSDC
+      * gcUSDT
+    * gcToken (Type 2)
+      * gcETH
+      * gcWBTC
+      * gcBAT
+      * gcZRX
+      * gcUNI
 
 Currently all gTokens are also gcTokens, because they are based on their
 Compound cToken counterpart. Other gTokens based on other platforms
@@ -166,9 +179,8 @@ functionality to:
 4. Migrate the pool funds (GRO and gToken balances) to an external address
    with a 7 day grace period
 
-Note that after the liquidity pool is migrated for the first time, the gToken
-contract collects a 2% fee for deposits and does not collect the 1% fee for
-withdrawals.
+Note that before the liquidity pool is allocated, and also after it has been
+migrated, the gToken contract does not collect the 1% fee described above.
 
 Relevant implementation files:
 
@@ -234,6 +246,14 @@ Relevant implementation files:
 ### Basic gcToken Type 2 functionality
 
 _Under construction_
+
+Relevant implementation files:
+
+* [GCToken.sol](contracts/GCToken.sol)
+* [GCFormulae.sol](contracts/GCFormulae.sol)
+* [GCTokenBase.sol](contracts/GCTokenBase.sol)
+* [GCTokenType2.sol](contracts/GCTokenType2.sol)
+* [GCDelegatedReserveManager.sol](contracts/GCDelegatedReserveManager.sol)
 
 ## Building, Deploying and Testing
 
