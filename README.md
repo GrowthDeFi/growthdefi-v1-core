@@ -179,8 +179,9 @@ functionality to:
 4. Migrate the pool funds (GRO and gToken balances) to an external address
    with a 7 day grace period
 
-Note that before the liquidity pool is allocated, and also after it has been
-migrated, the gToken contract does not collect the 1% fee described above.
+Note that after the liquidity pool is migrated for the first time, the gToken
+contract collects a 2% fee on deposits and does not collect any fee for
+withdrawals.
 
 Relevant implementation files:
 
