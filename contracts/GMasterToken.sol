@@ -9,7 +9,10 @@ import { GCToken } from "./GCToken.sol";
 import { G } from "./G.sol";
 
 // missing 0.1% fee / month collected at each operation
-// streaming fee sent to multisig and then an external contract
+// streaming fee accumulated and then claimed to an external contract
+// which by default is the locked LP
+// replacing the external contract applies immediately but requires
+// liquidity migration policy of 7-days
 
 contract GMasterToken is GTokenBase
 {
