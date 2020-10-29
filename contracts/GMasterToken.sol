@@ -135,4 +135,27 @@ contract GMasterToken is GTokenBase
 		(_grossShares,) = GCToken(_token).calcWithdrawalSharesFromUnderlyingCost(_underlyingCost, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
 		return _grossShares;
 	}
+
+	// streamming fee
+
+	uint256 constant STREAMING_FEE_PER_SECOND = 385609697; // ((1 + 0.001) ** (1 / (30 * 24 * 60 * 60))) - 1
+
+	function _calcStreamingFee(uint256 _totalSupply, uint256 _lastTime, uint256 _thisTime) internal pure returns (uint256 _shares)
+	{
+		uint256 _ellapsed = _thisTime.sub(_lastTime);
+		uint256 _factor = _powpi(STREAMING_FEE_PER_SECOND.add(1e18), _ellapsed).sub(1e18);
+		_shares = _totalSupply.mul(_factor).div(1e18);
+		return _shares;
+	}
+
+	function _powpi(uint256 _base, uint256 _exp) internal pure returns (uint256 _power)
+	{
+		_power = 1e18;
+		while (_exp > 0) {
+			if (_exp & 1 != 0) _power = _power.mul(_base).div(1e18);
+			_base = _base.mul(_base).div(1e18);
+			_exp >>= 1;
+		}
+		return _power;
+	}
 }
