@@ -11,7 +11,7 @@ interface Comptroller
 	function getAccountLiquidity(address _account) external view returns (uint256 _error, uint256 _liquidity, uint256 _shortfall);
 }
 
-interface PriceOracle
+interface CPriceOracle
 {
 	function getUnderlyingPrice(address _ctoken) external view returns (uint256 _price);
 }

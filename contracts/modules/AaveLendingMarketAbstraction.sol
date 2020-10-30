@@ -7,7 +7,7 @@ import { Math } from "./Math.sol";
 import { Wrapping } from "./Wrapping.sol";
 import { Transfers } from "./Transfers.sol";
 
-import { LendingPoolAddressesProvider, LendingPool, LendingPoolCore, AToken, PriceOracle } from "../interop/Aave.sol";
+import { LendingPoolAddressesProvider, LendingPool, LendingPoolCore, AToken, APriceOracle } from "../interop/Aave.sol";
 
 import { $ } from "../network/$.sol";
 
@@ -48,7 +48,7 @@ library AaveLendingMarketAbstraction
 		} else {
 			address _provider = $.Aave_AAVE_LENDING_POOL_ADDRESSES_PROVIDER;
 			address _priceOracle = LendingPoolAddressesProvider(_provider).getPriceOracle();
-			uint256 _price = PriceOracle(_priceOracle).getAssetPrice(_token);
+			uint256 _price = APriceOracle(_priceOracle).getAssetPrice(_token);
 			address _core = $.Aave_AAVE_LENDING_POOL_CORE;
 			uint256 _decimals = LendingPoolCore(_core).getReserveDecimals(_token);
 			if (_decimals > 18) {
@@ -113,6 +113,7 @@ library AaveLendingMarketAbstraction
 
 	function _lend(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
+		if (_amount == 0) return true;
 		address _pool = $.Aave_AAVE_LENDING_POOL;
 		address _token = AToken(_atoken).underlyingAssetAddress();
 		if (_atoken == $.aETH) {
@@ -137,6 +138,7 @@ library AaveLendingMarketAbstraction
 
 	function _redeem(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
+		if (_amount == 0) return true;
 		// if (_amount == _getLendAmount(_atoken)) _amount = uint(-1);
 		if (_atoken == $.aETH) {
 			try AToken(_atoken).redeem(_amount) {
@@ -156,6 +158,7 @@ library AaveLendingMarketAbstraction
 
 	function _borrow(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
+		if (_amount == 0) return true;
 		address _pool = $.Aave_AAVE_LENDING_POOL;
 		address _token = AToken(_atoken).underlyingAssetAddress();
 		if (_atoken == $.aETH) {
@@ -176,6 +179,7 @@ library AaveLendingMarketAbstraction
 
 	function _repay(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
+		if (_amount == 0) return true;
 		// if (_amount == _getBorrowAmount(_atoken)) _amount = uint(-1);
 		address _pool = $.Aave_AAVE_LENDING_POOL;
 		address _token = AToken(_atoken).underlyingAssetAddress();

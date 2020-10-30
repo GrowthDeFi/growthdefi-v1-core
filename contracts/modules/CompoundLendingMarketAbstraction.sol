@@ -7,7 +7,7 @@ import { Math } from "./Math.sol";
 import { Wrapping } from "./Wrapping.sol";
 import { Transfers } from "./Transfers.sol";
 
-import { Comptroller, PriceOracle, CToken } from "../interop/Compound.sol";
+import { Comptroller, CPriceOracle, CToken } from "../interop/Compound.sol";
 
 import { $ } from "../network/$.sol";
 
@@ -40,7 +40,7 @@ library CompoundLendingMarketAbstraction
 		if (_result != 0) return 0;
 		if (_shortfall > 0) return 0;
 		address _priceOracle = Comptroller(_comptroller).oracle();
-		uint256 _price = PriceOracle(_priceOracle).getUnderlyingPrice(_ctoken);
+		uint256 _price = CPriceOracle(_priceOracle).getUnderlyingPrice(_ctoken);
 		return _liquidity.mul(1e18).div(_price);
 	}
 

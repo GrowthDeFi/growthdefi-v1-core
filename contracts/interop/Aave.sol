@@ -33,7 +33,7 @@ interface AToken is IERC20
 	function redeem(uint256 _amount) external;
 }
 
-interface PriceOracle
+interface APriceOracle
 {
 	function getAssetPrice(address _asset) external view returns (uint256 _assetPrice);
 }
