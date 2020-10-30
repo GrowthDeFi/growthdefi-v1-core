@@ -109,6 +109,7 @@ library CompoundLendingMarketAbstraction
 			try CToken(_ctoken).mint(_amount) returns (uint256 _errorCode) {
 				return _errorCode == 0;
 			} catch (bytes memory /* _data */) {
+				Transfers._approveFunds(_token, _ctoken, 0);
 				return false;
 			}
 		}
@@ -174,6 +175,7 @@ library CompoundLendingMarketAbstraction
 			try CToken(_ctoken).repayBorrow(_amount) returns (uint256 _errorCode) {
 				return _errorCode == 0;
 			} catch (bytes memory /* _data */) {
+				Transfers._approveFunds(_token, _ctoken, 0);
 				return false;
 			}
 		}
