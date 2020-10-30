@@ -13,8 +13,11 @@ contract GMasterToken is GTokenBase
 	using SafeMath for uint256;
 	using EnumerableSet for EnumerableSet.AddressSet;
 
+	uint256 constant DEFAULT_REBALANCE_MARGIN = 1e16;
+
 	EnumerableSet.AddressSet private tokens;
 	mapping (address => uint256) private percents;
+	uint256 private rebalanceMargin = DEFAULT_REBALANCE_MARGIN;
 
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken)
 		GTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken) public
@@ -35,6 +38,17 @@ contract GMasterToken is GTokenBase
 	function tokenPercent(address _token) public view returns (uint256 _percent)
 	{
 		return percents[_token];
+	}
+
+	function getRebalanceMargin() public view returns (uint256 _marginBalance)
+	{
+		return rebalanceMargin;
+	}
+
+	function setRebalanceMargin(uint256 _rebalanceMargin) public onlyOwner nonReentrant
+	{
+		require(0 < _rebalanceMargin && _rebalanceMargin < 1e18, "Invalid margin");
+		rebalanceMargin = _rebalanceMargin;
 	}
 
 	function transferTokenPercent(address _sourceToken, address _targetToken, uint256 _percent) public onlyOwner nonReentrant
@@ -108,12 +122,32 @@ contract GMasterToken is GTokenBase
 
 	function _findAdjustReserveOperation(uint256 _roomAmount) internal view returns (uint256 _which, address _adjustToken, uint256 _underlyingCostOrGrossShares)
 	{
-		_which = 0;
-		uint256 _maxPercent = 0; // add minimum
-
 		uint256 _reserveAmount = totalReserve();
 		_roomAmount = G.min(_roomAmount, _reserveAmount);
 		_reserveAmount = _reserveAmount.sub(_roomAmount);
+
+		{
+			uint256 _liquidAmount = G.getBalance(reserveToken);
+			uint256 _requiredAmount = _roomAmount.sub(G.min(_liquidAmount, _roomAmount));
+
+			if (_requiredAmount == 0) {
+				uint256 _tokenPercent = percents[reserveToken];
+				uint256 _newTokenReserve = _liquidAmount.sub(_roomAmount);
+				uint256 _newTokenPercent = _newTokenReserve.mul(1e18).div(_reserveAmount);
+				if (_newTokenPercent > _tokenPercent) {
+					uint256 _percent = _newTokenPercent.sub(_tokenPercent);
+					if (_percent < rebalanceMargin) return (0, address(0), 0);
+				}
+				else
+				if (_newTokenPercent < _tokenPercent) {
+					uint256 _percent = _tokenPercent.sub(_newTokenPercent);
+					if (_percent < rebalanceMargin) return (0, address(0), 0);
+				}
+			}
+		}
+
+		_which = 0;
+		uint256 _maxPercent = rebalanceMargin;
 
 		uint256 _tokenCount = tokenCount();
 		for (uint256 _i = 0; _i < _tokenCount; _i++) {
