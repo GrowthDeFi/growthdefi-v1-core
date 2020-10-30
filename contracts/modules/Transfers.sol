@@ -27,11 +27,13 @@ library Transfers
 
 	function _pullFunds(address _token, address _from, uint256 _amount) internal
 	{
+		if (_amount == 0) return;
 		IERC20(_token).safeTransferFrom(_from, address(this), _amount);
 	}
 
 	function _pushFunds(address _token, address _to, uint256 _amount) internal
 	{
+		if (_amount == 0) return;
 		IERC20(_token).safeTransfer(_to, _amount);
 	}
 }
