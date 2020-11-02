@@ -1,4 +1,5 @@
 const G = artifacts.require('G');
+const GC = artifacts.require('GC');
 const GLiquidityPoolManager = artifacts.require('GLiquidityPoolManager');
 const GCLeveragedReserveManager = artifacts.require('GCLeveragedReserveManager');
 const gcDAI = artifacts.require('gcDAI');
@@ -9,6 +10,7 @@ const IERC20 = artifacts.require('IERC20');
 
 module.exports = async (deployer, network) => {
   deployer.link(G, gcDAI);
+  deployer.link(GC, gcDAI);
   deployer.link(GLiquidityPoolManager, gcDAI);
   deployer.link(GCLeveragedReserveManager, gcDAI);
   await deployer.deploy(gcDAI);

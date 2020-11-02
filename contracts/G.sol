@@ -8,6 +8,7 @@ import { Transfers } from "./modules/Transfers.sol";
 import { Conversions } from "./modules/Conversions.sol";
 import { FlashLoans } from "./modules/FlashLoans.sol";
 import { BalancerLiquidityPoolAbstraction } from "./modules/BalancerLiquidityPoolAbstraction.sol";
+import { AaveLendingMarketAbstraction } from "./modules/AaveLendingMarketAbstraction.sol";
 import { CompoundLendingMarketAbstraction } from "./modules/CompoundLendingMarketAbstraction.sol";
 
 /**
@@ -47,7 +48,10 @@ library G
 	function createPool(address _token0, uint256 _amount0, address _token1, uint256 _amount1) public returns (address _pool) { return BalancerLiquidityPoolAbstraction._createPool(_token0, _amount0, _token1, _amount1); }
 	function joinPool(address _pool, address _token, uint256 _maxAmount) public returns (uint256 _amount) { return BalancerLiquidityPoolAbstraction._joinPool(_pool, _token, _maxAmount); }
 	function exitPool(address _pool, uint256 _percent) public returns (uint256 _amount0, uint256 _amount1) { return BalancerLiquidityPoolAbstraction._exitPool(_pool, _percent); }
+}
 
+library GC
+{
 	function getUnderlyingToken(address _ctoken) public view returns (address _token) { return CompoundLendingMarketAbstraction._getUnderlyingToken(_ctoken); }
 	function getCollateralRatio(address _ctoken) public view returns (uint256 _collateralFactor) { return CompoundLendingMarketAbstraction._getCollateralRatio(_ctoken); }
 //	function getMarketAmount(address _ctoken) public view returns (uint256 _marketAmount) { return CompoundLendingMarketAbstraction._getMarketAmount(_ctoken); }
@@ -64,9 +68,34 @@ library G
 	function redeem(address _ctoken, uint256 _amount) public returns (bool _success) { return CompoundLendingMarketAbstraction._redeem(_ctoken, _amount); }
 	function borrow(address _ctoken, uint256 _amount) public returns (bool _success) { return CompoundLendingMarketAbstraction._borrow(_ctoken, _amount); }
 	function repay(address _ctoken, uint256 _amount) public returns (bool _success) { return CompoundLendingMarketAbstraction._repay(_ctoken, _amount); }
-//	function safeEnter(address _ctoken) public { CompoundLendingMarketAbstraction._safeEnter(_ctoken); }
+	function safeEnter(address _ctoken) public { CompoundLendingMarketAbstraction._safeEnter(_ctoken); }
 	function safeLend(address _ctoken, uint256 _amount) public { CompoundLendingMarketAbstraction._safeLend(_ctoken, _amount); }
 	function safeRedeem(address _ctoken, uint256 _amount) public { CompoundLendingMarketAbstraction._safeRedeem(_ctoken, _amount); }
 //	function safeBorrow(address _ctoken, uint256 _amount) public { CompoundLendingMarketAbstraction._safeBorrow(_ctoken, _amount); }
 //	function safeRepay(address _ctoken, uint256 _amount) public { CompoundLendingMarketAbstraction._safeRepay(_ctoken, _amount); }
+}
+
+library GA
+{
+//	function getUnderlyingToken(address _atoken) public view returns (address _token) { return AaveLendingMarketAbstraction._getUnderlyingToken(_atoken); }
+//	function getCollateralRatio(address _atoken) public view returns (uint256 _collateralFactor) { return AaveLendingMarketAbstraction._getCollateralRatio(_atoken); }
+//	function getMarketAmount(address _atoken) public view returns (uint256 _marketAmount) { return AaveLendingMarketAbstraction._getMarketAmount(_atoken); }
+//	function getLiquidityAmount(address _atoken) public view returns (uint256 _liquidityAmount) { return AaveLendingMarketAbstraction._getLiquidityAmount(_atoken); }
+//	function getAvailableAmount(address _atoken, uint256 _marginAmount) public view returns (uint256 _availableAmount) { return AaveLendingMarketAbstraction._getAvailableAmount(_atoken, _marginAmount); }
+//	function getExchangeRate(address _atoken) public pure returns (uint256 _exchangeRate) { return AaveLendingMarketAbstraction._getExchangeRate(_atoken); }
+//	function fetchExchangeRate(address _atoken) public pure returns (uint256 _exchangeRate) { return AaveLendingMarketAbstraction._fetchExchangeRate(_atoken); }
+//	function getLendAmount(address _atoken) public view returns (uint256 _amount) { return AaveLendingMarketAbstraction._getLendAmount(_atoken); }
+//	function fetchLendAmount(address _atoken) public view returns (uint256 _amount) { return AaveLendingMarketAbstraction._fetchLendAmount(_atoken); }
+//	function getBorrowAmount(address _atoken) public view returns (uint256 _amount) { return AaveLendingMarketAbstraction._getBorrowAmount(_atoken); }
+//	function fetchBorrowAmount(address _atoken) public view returns (uint256 _amount) { return AaveLendingMarketAbstraction._fetchBorrowAmount(_atoken); }
+//	function enter(address _atoken) public returns (bool _success) { return AaveLendingMarketAbstraction._enter(_atoken); }
+//	function lend(address _atoken, uint256 _amount) public returns (bool _success) { return AaveLendingMarketAbstraction._lend(_atoken, _amount); }
+//	function redeem(address _atoken, uint256 _amount) public returns (bool _success) { return AaveLendingMarketAbstraction._redeem(_atoken, _amount); }
+//	function borrow(address _atoken, uint256 _amount) public returns (bool _success) { return AaveLendingMarketAbstraction._borrow(_atoken, _amount); }
+//	function repay(address _atoken, uint256 _amount) public returns (bool _success) { return AaveLendingMarketAbstraction._repay(_atoken, _amount); }
+//	function safeEnter(address _atoken) public pure { AaveLendingMarketAbstraction._safeEnter(_atoken); }
+//	function safeLend(address _atoken, uint256 _amount) public { AaveLendingMarketAbstraction._safeLend(_atoken, _amount); }
+//	function safeRedeem(address _atoken, uint256 _amount) public { AaveLendingMarketAbstraction._safeRedeem(_atoken, _amount); }
+//	function safeBorrow(address _atoken, uint256 _amount) public { AaveLendingMarketAbstraction._safeBorrow(_atoken, _amount); }
+//	function safeRepay(address _atoken, uint256 _amount) public { AaveLendingMarketAbstraction._safeRepay(_atoken, _amount); }
 }

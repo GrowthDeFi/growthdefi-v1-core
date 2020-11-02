@@ -3,10 +3,8 @@ pragma solidity ^0.6.0;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
-import { CompoundLendingMarketAbstraction } from "./modules/CompoundLendingMarketAbstraction.sol";
-
 import { GCToken } from "./GCToken.sol";
-import { G } from "./G.sol";
+import { G, GC } from "./G.sol";
 
 library GCDelegatedReserveManager
 {
@@ -56,7 +54,7 @@ library GCDelegatedReserveManager
 		_self.collateralizationRatio = DEFAULT_COLLATERALIZATION_RATIO;
 		_self.collateralizationMargin = DEFAULT_COLLATERALIZATION_MARGIN;
 
-		CompoundLendingMarketAbstraction._safeEnter(_reserveToken);
+		GC.safeEnter(_reserveToken);
 	}
 
 	function setExchange(Self storage _self, address _exchange) public
@@ -95,7 +93,7 @@ library GCDelegatedReserveManager
 
 	function _calcCollateralizationRatio(Self storage _self) internal view returns (uint256 _collateralizationRatio)
 	{
-		return G.getCollateralRatio(_self.reserveToken).mul(_self.collateralizationRatio).div(1e18);
+		return GC.getCollateralRatio(_self.reserveToken).mul(_self.collateralizationRatio).div(1e18);
 	}
 
 	function _gulpMiningAssets(Self storage _self) internal returns (bool _success)
@@ -105,12 +103,12 @@ library GCDelegatedReserveManager
 		if (_miningAmount < _self.miningMinGulpAmount) return true;
 		if (_self.exchange == address(0)) return true;
 		_self._convertMiningToUnderlying(G.min(_miningAmount, _self.miningMaxGulpAmount));
-		return G.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
+		return GC.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
 	}
 
 	function _gulpGrowthAssets(Self storage _self) internal returns (bool _success)
 	{
-		uint256 _borrowAmount = G.fetchBorrowAmount(_self.growthReserveToken);
+		uint256 _borrowAmount = GC.fetchBorrowAmount(_self.growthReserveToken);
 		uint256 _redeemableAmount = _self._calcUnderlyingCostFromShares(G.getBalance(_self.growthToken));
 		if (_redeemableAmount <= _borrowAmount) return true;
 		uint256 _growthAmount = _redeemableAmount.sub(_borrowAmount);
@@ -120,7 +118,7 @@ library GCDelegatedReserveManager
 		if (_grossShares == 0) return true;
 		try GCToken(_self.growthToken).withdrawUnderlying(_grossShares) {
 			_self._convertGrowthUnderlyingToUnderlying(G.getBalance(_self.growthUnderlyingToken));
-			return G.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
+			return GC.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
 		} catch (bytes memory /* _data */) {
 			return false;
 		}
@@ -130,7 +128,7 @@ library GCDelegatedReserveManager
 	{
 		uint256 _scallingRatio;
 		{
-			uint256 _reserveAmount = G.fetchLendAmount(_self.reserveToken);
+			uint256 _reserveAmount = GC.fetchLendAmount(_self.reserveToken);
 			_roomAmount = G.min(_roomAmount, _reserveAmount);
 			uint256 _newReserveAmount = _reserveAmount.sub(_roomAmount);
 			// TODO review if this is necessary (r1 * c) / (r2 * c) => r1 / r2 (if c > 0)
@@ -139,12 +137,12 @@ library GCDelegatedReserveManager
 			uint256 _newAvailableAmount = _newReserveAmount.mul(_collateralRatio).div(1e18);
 			_scallingRatio = _availableAmount > 0 ? uint256(1e18).mul(_newAvailableAmount).div(_availableAmount) : 1e18;
 		}
-		uint256 _borrowAmount = G.fetchBorrowAmount(_self.growthReserveToken);
+		uint256 _borrowAmount = GC.fetchBorrowAmount(_self.growthReserveToken);
 		uint256 _newBorrowAmount;
 		uint256 _minBorrowAmount;
 		uint256 _maxBorrowAmount;
 		{
-			uint256 _freeAmount = G.getLiquidityAmount(_self.growthReserveToken);
+			uint256 _freeAmount = GC.getLiquidityAmount(_self.growthReserveToken);
 			uint256 _totalAmount = _borrowAmount.add(_freeAmount);
 			uint256 _idealAmount = _totalAmount.mul(_self.collateralizationRatio).div(1e18);
 			uint256 _marginAmount = _totalAmount.mul(_self.collateralizationMargin).div(1e18);
@@ -156,13 +154,13 @@ library GCDelegatedReserveManager
 		}
 		if (_borrowAmount < _minBorrowAmount) {
 			uint256 _amount = _newBorrowAmount.sub(_borrowAmount);
-			_success = G.borrow(_self.growthReserveToken, _amount);
+			_success = GC.borrow(_self.growthReserveToken, _amount);
 			if (!_success) return false;
 			G.approveFunds(_self.growthUnderlyingToken, _self.growthToken, _amount);
 			try GCToken(_self.growthToken).depositUnderlying(_amount) {
 				return true;
 			} catch (bytes memory /* _data */) {
-				G.repay(_self.growthReserveToken, _amount);
+				GC.repay(_self.growthReserveToken, _amount);
 				return false;
 			}
 		}
@@ -173,7 +171,7 @@ library GCDelegatedReserveManager
 			if (_grossShares == 0) return true;
 			try GCToken(_self.growthToken).withdrawUnderlying(_grossShares) {
 				uint256 _repayAmount = G.min(_borrowAmount, G.getBalance(_self.growthUnderlyingToken));
-				return G.repay(_self.growthReserveToken, _repayAmount);
+				return GC.repay(_self.growthReserveToken, _repayAmount);
 			} catch (bytes memory /* _data */) {
 				return false;
 			}

@@ -5,7 +5,7 @@ import { GCToken } from "./GCToken.sol";
 import { GCFormulae } from "./GCFormulae.sol";
 import { GCTokenBase } from "./GCTokenBase.sol";
 import { GCDelegatedReserveManager } from "./GCDelegatedReserveManager.sol";
-import { G } from "./G.sol";
+import { G, GC } from "./G.sol";
 
 contract GCTokenType2 is GCTokenBase
 {
@@ -16,17 +16,17 @@ contract GCTokenType2 is GCTokenBase
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _miningToken, address _growthToken)
 		GCTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken, _miningToken, _growthToken) public
 	{
-		address _underlyingToken = G.getUnderlyingToken(_reserveToken);
+		address _underlyingToken = GC.getUnderlyingToken(_reserveToken);
 		drm.init(_reserveToken, _underlyingToken, _miningToken, _growthToken);
 	}
 
 	function borrowingReserveUnderlying() public view override returns (uint256 _borrowingReserveUnderlying)
 	{
-		uint256 _lendAmount = G.getLendAmount(reserveToken);
-		uint256 _availableAmount = _lendAmount.mul(G.getCollateralRatio(reserveToken)).div(1e18);
+		uint256 _lendAmount = GC.getLendAmount(reserveToken);
+		uint256 _availableAmount = _lendAmount.mul(GC.getCollateralRatio(reserveToken)).div(1e18);
 		address _growthReserveToken = GCToken(growthToken).reserveToken();
-		uint256 _borrowAmount = G.getBorrowAmount(_growthReserveToken);
-		uint256 _freeAmount = G.getLiquidityAmount(_growthReserveToken);
+		uint256 _borrowAmount = GC.getBorrowAmount(_growthReserveToken);
+		uint256 _freeAmount = GC.getLiquidityAmount(_growthReserveToken);
 		uint256 _totalAmount = _borrowAmount.add(_freeAmount);
 		return _totalAmount > 0 ? _availableAmount.mul(_borrowAmount).div(_totalAmount) : 0;
 	}
@@ -78,6 +78,6 @@ contract GCTokenType2 is GCTokenBase
 
 	function _prepareWithdrawal(uint256 _cost) internal override returns (bool _success)
 	{
-		return drm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, G.fetchExchangeRate(reserveToken)));
+		return drm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, GC.fetchExchangeRate(reserveToken)));
 	}
 }

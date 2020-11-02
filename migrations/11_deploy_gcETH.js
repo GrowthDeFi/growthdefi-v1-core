@@ -1,4 +1,5 @@
 const G = artifacts.require('G');
+const GC = artifacts.require('GC');
 const GLiquidityPoolManager = artifacts.require('GLiquidityPoolManager');
 const GCDelegatedReserveManager = artifacts.require('GCDelegatedReserveManager');
 const gcUSDC = artifacts.require('gcUSDC');
@@ -11,6 +12,7 @@ const IERC20 = artifacts.require('IERC20');
 module.exports = async (deployer, network) => {
   if (['ropsten', 'rinkeby', 'goerli'].includes(network)) return;
   deployer.link(G, gcETH);
+  deployer.link(GC, gcETH);
   deployer.link(GLiquidityPoolManager, gcETH);
   deployer.link(GCDelegatedReserveManager, gcETH);
   const gctoken = await gcUSDC.deployed();

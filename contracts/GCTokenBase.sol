@@ -5,7 +5,7 @@ import { GFormulae } from "./GFormulae.sol";
 import { GTokenBase } from "./GTokenBase.sol";
 import { GCToken } from "./GCToken.sol";
 import { GCFormulae } from "./GCFormulae.sol";
-import { G } from "./G.sol";
+import { G, GC } from "./G.sol";
 
 /**
  * @notice This abstract contract provides the basis implementation for all
@@ -43,7 +43,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	{
 		miningToken = _miningToken;
 		growthToken = _growthToken;
-		address _underlyingToken = G.getUnderlyingToken(_reserveToken);
+		address _underlyingToken = GC.getUnderlyingToken(_reserveToken);
 		underlyingToken = _underlyingToken;
 	}
 
@@ -147,7 +147,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	 */
 	function exchangeRate() public view override returns (uint256 _exchangeRate)
 	{
-		return G.getExchangeRate(reserveToken);
+		return GC.getExchangeRate(reserveToken);
 	}
 
 	/**
@@ -168,7 +168,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	 */
 	function lendingReserveUnderlying() public view virtual override returns (uint256 _lendingReserveUnderlying)
 	{
-		return G.getLendAmount(reserveToken);
+		return GC.getLendAmount(reserveToken);
 	}
 
 	/**
@@ -179,7 +179,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	 */
 	function borrowingReserveUnderlying() public view virtual override returns (uint256 _borrowingReserveUnderlying)
 	{
-		return G.getBorrowAmount(reserveToken);
+		return GC.getBorrowAmount(reserveToken);
 	}
 
 	/**
@@ -199,7 +199,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 		(uint256 _netShares, uint256 _feeShares) = GFormulae._calcDepositSharesFromCost(_cost, totalReserve(), totalSupply(), depositFee());
 		require(_netShares > 0, "shares must be greater than 0");
 		G.pullFunds(underlyingToken, _from, _underlyingCost);
-		G.safeLend(reserveToken, _underlyingCost);
+		GC.safeLend(reserveToken, _underlyingCost);
 		require(_prepareDeposit(_cost), "not available at the moment");
 		_mint(_from, _netShares);
 		_mint(address(this), _feeShares.div(2));
@@ -222,8 +222,8 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 		uint256 _underlyingCost = GCFormulae._calcUnderlyingCostFromCost(_cost, exchangeRate());
 		require(_underlyingCost > 0, "underlying cost must be greater than 0");
 		require(_prepareWithdrawal(_cost), "not available at the moment");
-		_underlyingCost = G.min(_underlyingCost, G.getLendAmount(reserveToken));
-		G.safeRedeem(reserveToken, _underlyingCost);
+		_underlyingCost = G.min(_underlyingCost, GC.getLendAmount(reserveToken));
+		GC.safeRedeem(reserveToken, _underlyingCost);
 		G.pushFunds(underlyingToken, _from, _underlyingCost);
 		_burn(_from, _grossShares);
 		_mint(address(this), _feeShares.div(2));

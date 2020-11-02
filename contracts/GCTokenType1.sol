@@ -6,7 +6,7 @@ import { GCFormulae } from "./GCFormulae.sol";
 import { GCTokenBase } from "./GCTokenBase.sol";
 import { GCLeveragedReserveManager } from "./GCLeveragedReserveManager.sol";
 import { GFlashBorrower } from "./GFlashBorrower.sol";
-import { G } from "./G.sol";
+import { G, GC } from "./G.sol";
 
 /**
  * @notice This contract implements the functionality for the gcToken Type 1.
@@ -48,7 +48,7 @@ contract GCTokenType1 is GCTokenBase, GFlashBorrower
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _miningToken)
 		GCTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken, _miningToken, address(0)) public
 	{
-		address _underlyingToken = G.getUnderlyingToken(_reserveToken);
+		address _underlyingToken = GC.getUnderlyingToken(_reserveToken);
 		lrm.init(_reserveToken, _underlyingToken, _miningToken);
 	}
 
@@ -247,7 +247,7 @@ contract GCTokenType1 is GCTokenBase, GFlashBorrower
 	 */
 	function _prepareWithdrawal(uint256 _cost) internal override mayFlashBorrow returns (bool _success)
 	{
-		return lrm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, G.fetchExchangeRate(reserveToken)));
+		return lrm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, GC.fetchExchangeRate(reserveToken)));
 	}
 
 	/**

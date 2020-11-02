@@ -3,9 +3,7 @@ pragma solidity ^0.6.0;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
-import { CompoundLendingMarketAbstraction } from "./modules/CompoundLendingMarketAbstraction.sol";
-
-import { G } from "./G.sol";
+import { G, GC } from "./G.sol";
 
 /**
  * @dev This library implements data structure abstraction for the leveraged
@@ -59,7 +57,7 @@ library GCLeveragedReserveManager
 		_self.collateralizationRatio = DEFAULT_COLLATERALIZATION_RATIO;
 		_self.collateralizationMargin = DEFAULT_COLLATERALIZATION_MARGIN;
 
-		CompoundLendingMarketAbstraction._safeEnter(_reserveToken);
+		GC.safeEnter(_reserveToken);
 	}
 
 	/**
@@ -135,7 +133,7 @@ library GCLeveragedReserveManager
 	 */
 	function _calcCollateralizationRatio(Self storage _self) internal view returns (uint256 _collateralizationRatio, uint256 _minCollateralizationRatio, uint256 _maxCollateralizationRatio)
 	{
-		uint256 _collateralRatio = G.getCollateralRatio(_self.reserveToken);
+		uint256 _collateralRatio = GC.getCollateralRatio(_self.reserveToken);
 		_collateralizationRatio = _collateralRatio.mul(_self.collateralizationRatio).div(1e18);
 		_minCollateralizationRatio = _collateralRatio.mul(_self.collateralizationRatio.sub(_self.collateralizationMargin)).div(1e18);
 		_maxCollateralizationRatio = _collateralRatio.mul(_self.collateralizationRatio.add(_self.collateralizationMargin)).div(1e18);
@@ -159,7 +157,7 @@ library GCLeveragedReserveManager
 		if (_miningAmount == 0) return true;
 		if (_miningAmount < _self.miningMinGulpAmount) return true;
 		_self._convertMiningToUnderlying(G.min(_miningAmount, _self.miningMaxGulpAmount));
-		return G.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
+		return GC.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
 	}
 
 	/**
@@ -176,8 +174,8 @@ library GCLeveragedReserveManager
 	function _adjustLeverage(Self storage _self, uint256 _roomAmount) internal returns (bool _success)
 	{
 		// the reserve is the diference between lend and borrow
-		uint256 _lendAmount = G.fetchLendAmount(_self.reserveToken);
-		uint256 _borrowAmount = G.fetchBorrowAmount(_self.reserveToken);
+		uint256 _lendAmount = GC.fetchLendAmount(_self.reserveToken);
+		uint256 _borrowAmount = GC.fetchBorrowAmount(_self.reserveToken);
 		uint256 _reserveAmount = _lendAmount.sub(_borrowAmount);
 		// caps the room in case it is larger than the reserve
 		_roomAmount = G.min(_roomAmount, _reserveAmount);
@@ -233,13 +231,13 @@ library GCLeveragedReserveManager
 		// note that the reserve adjustment is not 100% accurate as we
 		// did not account for FlashLoan fees in the initial calculation
 		if (_which == 1) {
-			bool _success1 = G.lend(_self.reserveToken, _amount.sub(_fee));
-			bool _success2 = G.borrow(_self.reserveToken, _amount);
+			bool _success1 = GC.lend(_self.reserveToken, _amount.sub(_fee));
+			bool _success2 = GC.borrow(_self.reserveToken, _amount);
 			return _success1 && _success2;
 		}
 		if (_which == 2) {
-			bool _success1 = G.repay(_self.reserveToken, _amount);
-			bool _success2 = G.redeem(_self.reserveToken, _amount.add(_fee));
+			bool _success1 = GC.repay(_self.reserveToken, _amount);
+			bool _success2 = GC.redeem(_self.reserveToken, _amount.add(_fee));
 			return _success1 && _success2;
 		}
 		assert(false);
