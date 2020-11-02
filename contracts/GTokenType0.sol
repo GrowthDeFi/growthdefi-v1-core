@@ -4,7 +4,7 @@ pragma solidity ^0.6.0;
 import { GTokenBase } from "./GTokenBase.sol";
 import { GPortfolioReserveManager } from "./GPortfolioReserveManager.sol";
 
-contract GMasterToken is GTokenBase
+contract GTokenType0 is GTokenBase
 {
 	using GPortfolioReserveManager for GPortfolioReserveManager.Self;
 
