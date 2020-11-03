@@ -12,6 +12,7 @@ library GCDelegatedReserveManager
 	using SafeMath for uint256;
 	using GCDelegatedReserveManager for GCDelegatedReserveManager.Self;
 
+	uint256 constant MAXIMUM_COLLATERALIZATION_RATIO = 96e16; // 96% of 50% = 48%
 	uint256 constant DEFAULT_COLLATERALIZATION_RATIO = 80e16; // 80% of 50% = 40%
 	uint256 constant DEFAULT_COLLATERALIZATION_MARGIN = 8e16; // 8% of 50% = 4%
 
@@ -79,7 +80,7 @@ library GCDelegatedReserveManager
 
 	function setCollateralizationRatio(Self storage _self, uint256 _collateralizationRatio, uint256 _collateralizationMargin) public
 	{
-		require(_collateralizationMargin <= _collateralizationRatio && _collateralizationRatio.add(_collateralizationMargin) <= 1e18, "invalid ratio");
+		require(_collateralizationMargin <= _collateralizationRatio && _collateralizationRatio.add(_collateralizationMargin) <= MAXIMUM_COLLATERALIZATION_RATIO, "invalid ratio");
 		_self.collateralizationRatio = _collateralizationRatio;
 		_self.collateralizationMargin = _collateralizationMargin;
 	}
@@ -111,18 +112,18 @@ library GCDelegatedReserveManager
 	{
 		if (_self.exchange == address(0)) return true;
 		uint256 _borrowAmount = GC.fetchBorrowAmount(_self.growthReserveToken);
-		uint256 _redeemableAmount = _self._calcUnderlyingCostFromShares(G.getBalance(_self.growthToken));
+		uint256 _totalShares = G.getBalance(_self.growthToken);
+		uint256 _redeemableAmount = _self._calcWithdrawalUnderlyingCostFromShares(_totalShares);
 		if (_redeemableAmount <= _borrowAmount) return true;
 		uint256 _growthAmount = _redeemableAmount.sub(_borrowAmount);
 		if (_growthAmount < _self.growthMinGulpAmount) return true;
-		uint256 _grossShares = _self._calcSharesFromUnderlyingCost(G.min(_growthAmount, _self.growthMaxGulpAmount));
+		uint256 _grossShares = _self._calcWithdrawalSharesFromUnderlyingCost(G.min(_growthAmount, _self.growthMaxGulpAmount));
+		_grossShares = G.min(_grossShares, _totalShares);
 		if (_grossShares == 0) return true;
-		try GCToken(_self.growthToken).withdrawUnderlying(_grossShares) {
-			_self._convertGrowthUnderlyingToUnderlying(G.getBalance(_self.growthUnderlyingToken));
-			return GC.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
-		} catch (bytes memory /* _data */) {
-			return false;
-		}
+		_success = _self._withdrawUnderlying(_grossShares);
+		if (!_success) return false;
+		_self._convertGrowthUnderlyingToUnderlying(G.getBalance(_self.growthUnderlyingToken));
+		return GC.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
 	}
 
 	function _adjustReserve(Self storage _self, uint256 _roomAmount) internal returns (bool _success)
@@ -157,30 +158,25 @@ library GCDelegatedReserveManager
 			uint256 _amount = _newBorrowAmount.sub(_borrowAmount);
 			_success = GC.borrow(_self.growthReserveToken, _amount);
 			if (!_success) return false;
-			G.approveFunds(_self.growthUnderlyingToken, _self.growthToken, _amount);
-			try GCToken(_self.growthToken).depositUnderlying(_amount) {
-				return true;
-			} catch (bytes memory /* _data */) {
-				GC.repay(_self.growthReserveToken, _amount);
-				return false;
-			}
+			_success = _self._depositUnderlying(_amount);
+			if (_success) return true;
+			GC.repay(_self.growthReserveToken, _amount);
+			return false;
 		}
 		if (_borrowAmount > _maxBorrowAmount) {
 			uint256 _amount = _borrowAmount.sub(_newBorrowAmount);
-			uint256 _grossShares = _self._calcSharesFromUnderlyingCost(_amount);
+			uint256 _grossShares = _self._calcWithdrawalSharesFromUnderlyingCost(_amount);
 			_grossShares = G.min(_grossShares, G.getBalance(_self.growthToken));
 			if (_grossShares == 0) return true;
-			try GCToken(_self.growthToken).withdrawUnderlying(_grossShares) {
-				uint256 _repayAmount = G.min(_borrowAmount, G.getBalance(_self.growthUnderlyingToken));
-				return GC.repay(_self.growthReserveToken, _repayAmount);
-			} catch (bytes memory /* _data */) {
-				return false;
-			}
+			_success = _self._withdrawUnderlying(_grossShares);
+			if (!_success) return false;
+			uint256 _repayAmount = G.min(_borrowAmount, G.getBalance(_self.growthUnderlyingToken));
+			return GC.repay(_self.growthReserveToken, _repayAmount);
 		}
 		return true;
 	}
 
-	function _calcUnderlyingCostFromShares(Self storage _self, uint256 _grossShares) internal view returns (uint256 _underlyingCost) {
+	function _calcWithdrawalUnderlyingCostFromShares(Self storage _self, uint256 _grossShares) internal view returns (uint256 _underlyingCost) {
 		uint256 _totalReserve = GCToken(_self.growthToken).totalReserve();
 		uint256 _totalSupply = GCToken(_self.growthToken).totalSupply();
 		uint256 _withdrawalFee = GCToken(_self.growthToken).withdrawalFee();
@@ -189,13 +185,33 @@ library GCDelegatedReserveManager
 		return _underlyingCost;
 	}
 
-	function _calcSharesFromUnderlyingCost(Self storage _self, uint256 _underlyingCost) internal view returns (uint256 _grossShares) {
+	function _calcWithdrawalSharesFromUnderlyingCost(Self storage _self, uint256 _underlyingCost) internal view returns (uint256 _grossShares) {
 		uint256 _totalReserve = GCToken(_self.growthToken).totalReserve();
 		uint256 _totalSupply = GCToken(_self.growthToken).totalSupply();
 		uint256 _withdrawalFee = GCToken(_self.growthToken).withdrawalFee();
 		uint256 _exchangeRate = GCToken(_self.growthToken).exchangeRate();
 		(_grossShares,) = GCToken(_self.growthToken).calcWithdrawalSharesFromUnderlyingCost(_underlyingCost, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
 		return _grossShares;
+	}
+
+	function _depositUnderlying(Self storage _self, uint256 _underlyingCost) internal returns (bool _success)
+	{
+		G.approveFunds(_self.growthUnderlyingToken, _self.growthToken, _underlyingCost);
+		try GCToken(_self.growthToken).depositUnderlying(_underlyingCost) {
+			return true;
+		} catch (bytes memory /* _data */) {
+			G.approveFunds(_self.growthUnderlyingToken, _self.growthToken, 0);
+			return false;
+		}
+	}
+
+	function _withdrawUnderlying(Self storage _self, uint256 _grossShares) internal returns (bool _success)
+	{
+		try GCToken(_self.growthToken).withdrawUnderlying(_grossShares) {
+			return true;
+		} catch (bytes memory /* _data */) {
+			return false;
+		}
 	}
 
 	function _convertMiningToUnderlying(Self storage _self, uint256 _inputAmount) internal
