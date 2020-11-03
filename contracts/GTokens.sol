@@ -117,6 +117,102 @@ contract gCOMP is GTokenType0
 }
 
 /**
+ * @notice Definition of gENJ. As a gToken Type 0, it uses ENJ as reserve and
+ * distributes to other gToken types.
+ */
+contract gENJ is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth ENJ", "gENJ", 18, $.GRO, $.ENJ) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gKNC. As a gToken Type 0, it uses KNC as reserve and
+ * distributes to other gToken types.
+ */
+contract gKNC is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth KNC", "gKNC", 18, $.GRO, $.KNC) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gAAVE. As a gToken Type 0, it uses AAVE as reserve and
+ * distributes to other gToken types.
+ */
+contract gAAVE is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth AAVE", "gAAVE", 18, $.GRO, $.AAVE) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gLINK. As a gToken Type 0, it uses LINK as reserve and
+ * distributes to other gToken types.
+ */
+contract gLINK is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth LINK", "gLINK", 18, $.GRO, $.LINK) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gMANA. As a gToken Type 0, it uses MANA as reserve and
+ * distributes to other gToken types.
+ */
+contract gMANA is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth MANA", "gMANA", 18, $.GRO, $.MANA) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gREN. As a gToken Type 0, it uses REN as reserve and
+ * distributes to other gToken types.
+ */
+contract gREN is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth REN", "gREN", 18, $.GRO, $.REN) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gSNX. As a gToken Type 0, it uses SNX as reserve and
+ * distributes to other gToken types.
+ */
+contract gSNX is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth SNX", "gSNX", 18, $.GRO, $.SNX) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gYFI. As a gToken Type 0, it uses YFI as reserve and
+ * distributes to other gToken types.
+ */
+contract gYFI is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth YFI", "gYFI", 18, $.GRO, $.YFI) public
+	{
+	}
+}
+
+/**
  * @notice Definition of gcDAI. As a gcToken Type 1, it uses cDAI as reserve
  * and employs leverage to maximize returns.
  */
