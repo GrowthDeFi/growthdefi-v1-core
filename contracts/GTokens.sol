@@ -2,10 +2,107 @@
 pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
+import { GTokenType0 } from "./GTokenType0.sol";
 import { GCTokenType1 } from "./GCTokenType1.sol";
 import { GCTokenType2 } from "./GCTokenType2.sol";
 
 import { $ } from "./network/$.sol";
+
+/**
+ * @notice Definition of gDAI. As a gToken Type 0, it uses DAI as reserve and
+ * distributes to other gToken types.
+ */
+contract gDAI is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth DAI", "gDAI", 18, $.GRO, $.DAI) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gUSDC. As a gToken Type 0, it uses USDC as reserve and
+ * distributes to other gToken types.
+ */
+contract gUSDC is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth USDC", "gUSDC", 6, $.GRO, $.USDC) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gUSDT. As a gToken Type 0, it uses USDT as reserve and
+ * distributes to other gToken types.
+ */
+contract gUSDT is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth USDT", "gUSDT", 6, $.GRO, $.USDT) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gETH. As a gToken Type 0, it uses WETH as reserve and
+ * distributes to other gToken types.
+ */
+contract gETH is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth ETH", "gETH", 18, $.GRO, $.WETH) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gWBTC. As a gToken Type 0, it uses WBTC as reserve and
+ * distributes to other gToken types.
+ */
+contract gWBTC is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth WBTC", "gWBTC", 8, $.GRO, $.WBTC) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gBAT. As a gToken Type 0, it uses BAT as reserve and
+ * distributes to other gToken types.
+ */
+contract gBAT is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth BAT", "gBAT", 18, $.GRO, $.BAT) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gZRX. As a gToken Type 0, it uses ZRX as reserve and
+ * distributes to other gToken types.
+ */
+contract gZRX is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth ZRX", "gZRX", 18, $.GRO, $.ZRX) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gUNI. As a gToken Type 0, it uses UNI as reserve and
+ * distributes to other gToken types.
+ */
+contract gUNI is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth UNI", "gUNI", 18, $.GRO, $.UNI) public
+	{
+	}
+}
 
 /**
  * @notice Definition of gcDAI. As a gcToken Type 1, it uses cDAI as reserve
