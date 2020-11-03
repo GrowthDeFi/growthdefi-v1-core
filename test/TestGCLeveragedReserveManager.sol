@@ -7,7 +7,6 @@ import { DeployedAddresses } from "truffle/DeployedAddresses.sol";
 import { Env } from "./Env.sol";
 
 import { GCLeveragedReserveManager } from "../contracts/GCLeveragedReserveManager.sol";
-import { G } from "../contracts/G.sol";
 
 contract TestGCLeveragedReserveManager is Env
 {
