@@ -98,22 +98,22 @@ library GCDelegatedReserveManager
 
 	function _gulpMiningAssets(Self storage _self) internal returns (bool _success)
 	{
+		if (_self.exchange == address(0)) return true;
 		uint256 _miningAmount = G.getBalance(_self.miningToken);
 		if (_miningAmount == 0) return true;
 		if (_miningAmount < _self.miningMinGulpAmount) return true;
-		if (_self.exchange == address(0)) return true;
 		_self._convertMiningToUnderlying(G.min(_miningAmount, _self.miningMaxGulpAmount));
 		return GC.lend(_self.reserveToken, G.getBalance(_self.underlyingToken));
 	}
 
 	function _gulpGrowthAssets(Self storage _self) internal returns (bool _success)
 	{
+		if (_self.exchange == address(0)) return true;
 		uint256 _borrowAmount = GC.fetchBorrowAmount(_self.growthReserveToken);
 		uint256 _redeemableAmount = _self._calcUnderlyingCostFromShares(G.getBalance(_self.growthToken));
 		if (_redeemableAmount <= _borrowAmount) return true;
 		uint256 _growthAmount = _redeemableAmount.sub(_borrowAmount);
 		if (_growthAmount < _self.growthMinGulpAmount) return true;
-		if (_self.exchange == address(0)) return true;
 		uint256 _grossShares = _self._calcSharesFromUnderlyingCost(G.min(_growthAmount, _self.growthMaxGulpAmount));
 		if (_grossShares == 0) return true;
 		try GCToken(_self.growthToken).withdrawUnderlying(_grossShares) {
