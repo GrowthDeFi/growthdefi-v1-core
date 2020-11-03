@@ -105,6 +105,18 @@ contract gUNI is GTokenType0
 }
 
 /**
+ * @notice Definition of gCOMP. As a gToken Type 0, it uses COMP as reserve and
+ * distributes to other gToken types.
+ */
+contract gCOMP is GTokenType0
+{
+	constructor ()
+		GTokenType0("growth COMP", "gCOMP", 18, $.GRO, $.COMP) public
+	{
+	}
+}
+
+/**
  * @notice Definition of gcDAI. As a gcToken Type 1, it uses cDAI as reserve
  * and employs leverage to maximize returns.
  */
@@ -142,7 +154,7 @@ contract gcUSDT is GCTokenType1
 
 /**
  * @notice Definition of gcETH. As a gcToken Type 2, it uses cETH as reserve
- * which serves as collateral for minting gcDAI.
+ * which serves as collateral for minting gcUSDC.
  */
 contract gcETH is GCTokenType2
 {
@@ -156,7 +168,7 @@ contract gcETH is GCTokenType2
 
 /**
  * @notice Definition of gcWBTC. As a gcToken Type 2, it uses cWBTC as reserve
- * which serves as collateral for minting gcDAI.
+ * which serves as collateral for minting gcUSDC.
  */
 contract gcWBTC is GCTokenType2
 {
@@ -168,7 +180,7 @@ contract gcWBTC is GCTokenType2
 
 /**
  * @notice Definition of gcBAT. As a gcToken Type 2, it uses cBAT as reserve
- * which serves as collateral for minting gcDAI.
+ * which serves as collateral for minting gcUSDC.
  */
 contract gcBAT is GCTokenType2
 {
@@ -180,7 +192,7 @@ contract gcBAT is GCTokenType2
 
 /**
  * @notice Definition of gcZRX. As a gcToken Type 2, it uses cZRX as reserve
- * which serves as collateral for minting gcDAI.
+ * which serves as collateral for minting gcUSDC.
  */
 contract gcZRX is GCTokenType2
 {
@@ -192,12 +204,24 @@ contract gcZRX is GCTokenType2
 
 /**
  * @notice Definition of gcUNI. As a gcToken Type 2, it uses cUNI as reserve
- * which serves as collateral for minting gcDAI.
+ * which serves as collateral for minting gcUSDC.
  */
 contract gcUNI is GCTokenType2
 {
 	constructor (address _growthToken)
 		GCTokenType2("growth cUNI", "gcUNI", 8, $.GRO, $.cUNI, $.COMP, _growthToken) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of gcCOMP. As a gcToken Type 2, it uses cCOMP as reserve
+ * which serves as collateral for minting gcUSDC.
+ */
+contract gcCOMP is GCTokenType2
+{
+	constructor (address _growthToken)
+		GCTokenType2("growth cCOMP", "gcCOMP", 8, $.GRO, $.cCOMP, $.COMP, _growthToken) public
 	{
 	}
 }

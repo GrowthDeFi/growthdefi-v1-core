@@ -1,4 +1,4 @@
-const names = ['gcETH', 'gcWBTC', 'gcBAT', 'gcZRX', 'gcUNI'];
+const names = ['gcETH', 'gcWBTC', 'gcBAT', 'gcZRX', 'gcUNI', 'gcCOMP'];
 
 const G = artifacts.require('G');
 const GC = artifacts.require('GC');

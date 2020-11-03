@@ -1,4 +1,4 @@
-const names = ['gDAI', 'gUSDC', 'gUSDT', 'gETH', 'gWBTC', 'gBAT', 'gZRX', 'gUNI'];
+const names = ['gDAI', 'gUSDC', 'gUSDT', 'gETH', 'gWBTC', 'gBAT', 'gZRX', 'gUNI', 'gCOMP'];
 
 const G = artifacts.require('G');
 const GLiquidityPoolManager = artifacts.require('GLiquidityPoolManager');
