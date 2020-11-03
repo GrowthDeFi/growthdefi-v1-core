@@ -3,7 +3,8 @@ pragma solidity ^0.6.0;
 
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
-import { G, GC } from "./G.sol";
+import { G } from "./G.sol";
+import { GC } from "./GC.sol";
 
 /**
  * @dev This library implements data structure abstraction for the leveraged

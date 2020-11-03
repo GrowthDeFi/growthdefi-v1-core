@@ -4,7 +4,8 @@ pragma solidity ^0.6.0;
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 
 import { GCToken } from "./GCToken.sol";
-import { G, GC } from "./G.sol";
+import { G } from "./G.sol";
+import { GC } from "./GC.sol";
 
 library GCDelegatedReserveManager
 {

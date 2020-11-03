@@ -5,7 +5,8 @@ import { GFormulae } from "./GFormulae.sol";
 import { GTokenBase } from "./GTokenBase.sol";
 import { GCToken } from "./GCToken.sol";
 import { GCFormulae } from "./GCFormulae.sol";
-import { G, GC } from "./G.sol";
+import { G } from "./G.sol";
+import { GC } from "./GC.sol";
 
 /**
  * @notice This abstract contract provides the basis implementation for all

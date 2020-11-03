@@ -6,7 +6,8 @@ import { GCFormulae } from "./GCFormulae.sol";
 import { GCTokenBase } from "./GCTokenBase.sol";
 import { GCLeveragedReserveManager } from "./GCLeveragedReserveManager.sol";
 import { GFlashBorrower } from "./GFlashBorrower.sol";
-import { G, GC } from "./G.sol";
+import { G } from "./G.sol";
+import { GC } from "./GC.sol";
 
 /**
  * @notice This contract implements the functionality for the gcToken Type 1.

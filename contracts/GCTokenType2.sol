@@ -5,7 +5,8 @@ import { GCToken } from "./GCToken.sol";
 import { GCFormulae } from "./GCFormulae.sol";
 import { GCTokenBase } from "./GCTokenBase.sol";
 import { GCDelegatedReserveManager } from "./GCDelegatedReserveManager.sol";
-import { G, GC } from "./G.sol";
+import { G } from "./G.sol";
+import { GC } from "./GC.sol";
 
 contract GCTokenType2 is GCTokenBase
 {
