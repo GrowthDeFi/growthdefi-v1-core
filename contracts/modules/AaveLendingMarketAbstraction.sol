@@ -102,8 +102,8 @@ library AaveLendingMarketAbstraction
 	{
 		address _pool = $.Aave_AAVE_LENDING_POOL;
 		address _token = AToken(_atoken).underlyingAssetAddress();
-		(,_amount,,,,,,,,) = LendingPool(_pool).getUserReserveData(_token, address(this));
-		return _amount;
+		(,uint256 _netAmount,,,,,uint256 _feeAmount,,,) = LendingPool(_pool).getUserReserveData(_token, address(this));
+		return _netAmount.add(_feeAmount);
 	}
 
 	function _enter(address /* _atoken */) internal pure returns (bool _success)
@@ -139,7 +139,6 @@ library AaveLendingMarketAbstraction
 	function _redeem(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
 		if (_amount == 0) return true;
-		// if (_amount == _getLendAmount(_atoken)) _amount = uint(-1);
 		if (_atoken == $.aETH) {
 			try AToken(_atoken).redeem(_amount) {
 				assert(Wrapping._wrap(_amount));
@@ -180,7 +179,6 @@ library AaveLendingMarketAbstraction
 	function _repay(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
 		if (_amount == 0) return true;
-		// if (_amount == _getBorrowAmount(_atoken)) _amount = uint(-1);
 		address _pool = $.Aave_AAVE_LENDING_POOL;
 		address _token = AToken(_atoken).underlyingAssetAddress();
 		address payable _self = payable(address(this));

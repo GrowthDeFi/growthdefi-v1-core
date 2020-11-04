@@ -24,6 +24,10 @@ contract Env
 	address public cUSDC = $.cUSDC;
 	address public cWBTC = $.cWBTC;
 	address public cETH = $.cETH;
+	address public aDAI = $.aDAI;
+	address public aUSDC = $.aUSDC;
+	address public aWBTC = $.aWBTC;
+	address public aETH = $.aETH;
 
 	uint256 public initialBalance = 8 ether;
 
