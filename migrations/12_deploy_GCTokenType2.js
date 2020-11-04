@@ -4,7 +4,7 @@ const G = artifacts.require('G');
 const GC = artifacts.require('GC');
 const GLiquidityPoolManager = artifacts.require('GLiquidityPoolManager');
 const GCDelegatedReserveManager = artifacts.require('GCDelegatedReserveManager');
-const gcUSDC = artifacts.require('gcUSDC');
+const gDAI = artifacts.require('gDAI');
 const GSushiswapExchange = artifacts.require('GSushiswapExchange');
 const GUniswapV2Exchange = artifacts.require('GUniswapV2Exchange');
 const GTokenRegistry = artifacts.require('GTokenRegistry');
@@ -18,7 +18,7 @@ module.exports = async (deployer, network) => {
   } else {
     exchange = await GUniswapV2Exchange.deployed();
   }
-  const gctoken = await gcUSDC.deployed();
+  const gctoken = await gDAI.deployed();
   for (const name of names) {
     const gcXXX = artifacts.require(name);
     deployer.link(G, gcXXX);

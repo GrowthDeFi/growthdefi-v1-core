@@ -15,10 +15,10 @@ contract GCTokenType2 is GCTokenBase
 	GCDelegatedReserveManager.Self drm;
 
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _miningToken, address _growthToken)
-		GCTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken, _miningToken, _growthToken) public
+		GCTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken, _miningToken, _borrowToken, _growthToken) public
 	{
 		address _underlyingToken = GC.getUnderlyingToken(_reserveToken);
-		drm.init(_reserveToken, _underlyingToken, _miningToken, _growthToken);
+		drm.init(_reserveToken, _underlyingToken, _miningToken, _borrowToken, _growthToken);
 	}
 
 	function borrowingReserveUnderlying() public view override returns (uint256 _borrowingReserveUnderlying)

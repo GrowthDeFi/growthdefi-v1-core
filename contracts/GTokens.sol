@@ -250,12 +250,12 @@ contract gcUSDT is GCTokenType1
 
 /**
  * @notice Definition of gcETH. As a gcToken Type 2, it uses cETH as reserve
- * which serves as collateral for minting gcUSDC.
+ * which serves as collateral for minting gDAI.
  */
 contract gcETH is GCTokenType2
 {
 	constructor (address _growthToken)
-		GCTokenType2("growth cETH", "gcETH", 8, $.GRO, $.cETH, $.COMP, _growthToken) public
+		GCTokenType2("growth cETH", "gcETH", 8, $.GRO, $.cETH, $.COMP, $.cDAI, _growthToken) public
 	{
 	}
 
@@ -264,60 +264,60 @@ contract gcETH is GCTokenType2
 
 /**
  * @notice Definition of gcWBTC. As a gcToken Type 2, it uses cWBTC as reserve
- * which serves as collateral for minting gcUSDC.
+ * which serves as collateral for minting gDAI.
  */
 contract gcWBTC is GCTokenType2
 {
 	constructor (address _growthToken)
-		GCTokenType2("growth cWBTC", "gcWBTC", 8, $.GRO, $.cWBTC, $.COMP, _growthToken) public
+		GCTokenType2("growth cWBTC", "gcWBTC", 8, $.GRO, $.cWBTC, $.COMP, $.cDAI, _growthToken) public
 	{
 	}
 }
 
 /**
  * @notice Definition of gcBAT. As a gcToken Type 2, it uses cBAT as reserve
- * which serves as collateral for minting gcUSDC.
+ * which serves as collateral for minting gDAI.
  */
 contract gcBAT is GCTokenType2
 {
 	constructor (address _growthToken)
-		GCTokenType2("growth cBAT", "gcBAT", 8, $.GRO, $.cBAT, $.COMP, _growthToken) public
+		GCTokenType2("growth cBAT", "gcBAT", 8, $.GRO, $.cBAT, $.COMP, $.cDAI, _growthToken) public
 	{
 	}
 }
 
 /**
  * @notice Definition of gcZRX. As a gcToken Type 2, it uses cZRX as reserve
- * which serves as collateral for minting gcUSDC.
+ * which serves as collateral for minting gDAI.
  */
 contract gcZRX is GCTokenType2
 {
 	constructor (address _growthToken)
-		GCTokenType2("growth cZRX", "gcZRX", 8, $.GRO, $.cZRX, $.COMP, _growthToken) public
+		GCTokenType2("growth cZRX", "gcZRX", 8, $.GRO, $.cZRX, $.COMP, $.cDAI, _growthToken) public
 	{
 	}
 }
 
 /**
  * @notice Definition of gcUNI. As a gcToken Type 2, it uses cUNI as reserve
- * which serves as collateral for minting gcUSDC.
+ * which serves as collateral for minting gDAI.
  */
 contract gcUNI is GCTokenType2
 {
 	constructor (address _growthToken)
-		GCTokenType2("growth cUNI", "gcUNI", 8, $.GRO, $.cUNI, $.COMP, _growthToken) public
+		GCTokenType2("growth cUNI", "gcUNI", 8, $.GRO, $.cUNI, $.COMP, $.cDAI, _growthToken) public
 	{
 	}
 }
 
 /**
  * @notice Definition of gcCOMP. As a gcToken Type 2, it uses cCOMP as reserve
- * which serves as collateral for minting gcUSDC.
+ * which serves as collateral for minting gDAI.
  */
 contract gcCOMP is GCTokenType2
 {
 	constructor (address _growthToken)
-		GCTokenType2("growth cCOMP", "gcCOMP", 8, $.GRO, $.cCOMP, $.COMP, _growthToken) public
+		GCTokenType2("growth cCOMP", "gcCOMP", 8, $.GRO, $.cCOMP, $.COMP, $.cDAI, _growthToken) public
 	{
 	}
 }
