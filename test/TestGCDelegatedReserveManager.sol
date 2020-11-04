@@ -17,9 +17,9 @@ contract TestGCDelegatedReserveManager is Env
 
 	constructor () public
 	{
-		address gcDAI = DeployedAddresses.gcDAI();
-		drm1.init(cWBTC, WBTC, COMP, gcDAI);
-		drm2.init(cETH, WETH, COMP, gcDAI);
+		address gDAI = DeployedAddresses.gDAI();
+		drm1.init(cWBTC, WBTC, COMP, cDAI, gDAI);
+		drm2.init(cETH, WETH, COMP, cDAI, gDAI);
 
 		address exchange = DeployedAddresses.GSushiswapExchange();
 		drm1.setExchange(exchange);
