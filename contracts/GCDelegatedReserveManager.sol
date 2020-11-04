@@ -186,7 +186,7 @@ library GCDelegatedReserveManager
 		uint256 _totalReserve = GToken(_self.growthToken).totalReserve();
 		uint256 _totalSupply = GToken(_self.growthToken).totalSupply();
 		uint256 _withdrawalFee = GToken(_self.growthToken).withdrawalFee();
-		(_cost,) = GToken(_self.growthToken).calcWithdrawalCostFromShares(_grossShares, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
+		(_cost,) = GToken(_self.growthToken).calcWithdrawalCostFromShares(_grossShares, _totalReserve, _totalSupply, _withdrawalFee);
 		return _cost;
 	}
 
@@ -194,7 +194,7 @@ library GCDelegatedReserveManager
 		uint256 _totalReserve = GToken(_self.growthToken).totalReserve();
 		uint256 _totalSupply = GToken(_self.growthToken).totalSupply();
 		uint256 _withdrawalFee = GToken(_self.growthToken).withdrawalFee();
-		(_grossShares,) = GToken(_self.growthToken).calcWithdrawalSharesFromCost(_cost, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
+		(_grossShares,) = GToken(_self.growthToken).calcWithdrawalSharesFromCost(_cost, _totalReserve, _totalSupply, _withdrawalFee);
 		return _grossShares;
 	}
 
