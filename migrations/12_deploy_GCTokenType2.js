@@ -1,4 +1,11 @@
-const names = ['gcETH', 'gcWBTC', 'gcBAT', 'gcZRX', 'gcUNI', 'gcCOMP'];
+const tokens = {
+  'gcETH': [['gETH', `${90e16}`]],
+  'gcWBTC': [['gWBTC', `${90e16}`]],
+  'gcBAT': [['gBAT', `${90e16}`]],
+  'gcZRX': [['gZRX', `${90e16}`]],
+  'gcUNI': [['gUNI', `${90e16}`]],
+  'gcCOMP': [['gCOMP', `${90e16}`]],
+}
 
 const G = artifacts.require('G');
 const GC = artifacts.require('GC');
@@ -19,7 +26,7 @@ module.exports = async (deployer, network) => {
     exchange = await GUniswapV2Exchange.deployed();
   }
   const gctoken = await gDAI.deployed();
-  for (const name of names) {
+  for (const name in tokens) {
     const gcXXX = artifacts.require(name);
     deployer.link(G, gcXXX);
     deployer.link(GC, gcXXX);
@@ -50,5 +57,12 @@ module.exports = async (deployer, network) => {
       await token.allocateLiquidityPool(samount, gamount);
     }
     await registry.registerNewToken(token.address, '0x0000000000000000000000000000000000000000');
+    for (const [gname, percent] of tokens[name]) {
+      const gXXX = artifacts.require(gname);
+      const gtoken = await gXXX.deployed();
+      const utoken = await IERC20.at(await token.underlyingToken());
+      await gtoken.insertToken(token.address);
+      await gtoken.transferTokenPercent(utoken.address, token.address, percent);
+    }
   }
 };

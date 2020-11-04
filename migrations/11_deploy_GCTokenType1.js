@@ -1,4 +1,8 @@
-const names = ['gcDAI', 'gcUSDC', 'gcUSDT'];
+const tokens = {
+  'gcDAI': [['gDAI', `${90e16}`]],
+  'gcUSDC': [['gUSDC', `${90e16}`]],
+  'gcUSDT': [['gUSDT', `${90e16}`]],
+}
 
 const G = artifacts.require('G');
 const GC = artifacts.require('GC');
@@ -17,7 +21,7 @@ module.exports = async (deployer, network) => {
   } else {
     exchange = await GUniswapV2Exchange.deployed();
   }
-  for (const name of names) {
+  for (const name in tokens) {
     const gcXXX = artifacts.require(name);
     deployer.link(G, gcXXX);
     deployer.link(GC, gcXXX);
@@ -47,5 +51,12 @@ module.exports = async (deployer, network) => {
       await token.allocateLiquidityPool(samount, gamount);
     }
     await registry.registerNewToken(token.address, '0x0000000000000000000000000000000000000000');
+    for (const [gname, percent] of tokens[name]) {
+      const gXXX = artifacts.require(gname);
+      const gtoken = await gXXX.deployed();
+      const utoken = await IERC20.at(await token.underlyingToken());
+      await gtoken.insertToken(token.address);
+      await gtoken.transferTokenPercent(utoken.address, token.address, percent);
+    }
   }
 };
