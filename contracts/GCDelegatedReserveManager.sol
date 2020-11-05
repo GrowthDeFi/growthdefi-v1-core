@@ -162,6 +162,7 @@ library GCDelegatedReserveManager
 		}
 		if (_borrowAmount < _minBorrowAmount) {
 			uint256 _amount = _newBorrowAmount.sub(_borrowAmount);
+			_amount = G.min(_amount, GC.getMarketAmount(_self.borrowToken));
 			_success = GC.borrow(_self.borrowToken, _amount);
 			if (!_success) return false;
 			_success = _self._deposit(_amount);
