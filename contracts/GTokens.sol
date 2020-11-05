@@ -5,6 +5,7 @@ pragma experimental ABIEncoderV2;
 import { GTokenType0 } from "./GTokenType0.sol";
 import { GCTokenType1 } from "./GCTokenType1.sol";
 import { GCTokenType2 } from "./GCTokenType2.sol";
+import { GATokenType2 } from "./GATokenType2.sol";
 
 import { $ } from "./network/$.sol";
 
@@ -318,6 +319,70 @@ contract gcCOMP is GCTokenType2
 {
 	constructor (address _growthToken)
 		GCTokenType2("growth cCOMP", "gcCOMP", 8, $.GRO, $.cCOMP, $.COMP, $.cDAI, _growthToken) public
+	{
+	}
+}
+
+contract gacENJ is GATokenType2
+{
+	constructor (address _growthToken)
+		GATokenType2("growth aENJ", "gacENJ", 18, $.GRO, $.aENJ, $.aDAI, _growthToken) public
+	{
+	}
+}
+
+contract gacKNC is GATokenType2
+{
+	constructor (address _growthToken)
+		GATokenType2("growth aKNC", "gacKNC", 18, $.GRO, $.aKNC, $.aDAI, _growthToken) public
+	{
+	}
+}
+
+contract gacAAVE is GATokenType2
+{
+	constructor (address _growthToken)
+		GATokenType2("growth aAAVE", "gacAAVE", 18, $.GRO, $.aAAVE, $.aDAI, _growthToken) public
+	{
+	}
+}
+
+contract gacLINK is GATokenType2
+{
+	constructor (address _growthToken)
+		GATokenType2("growth aLINK", "gacLINK", 18, $.GRO, $.aLINK, $.aDAI, _growthToken) public
+	{
+	}
+}
+
+contract gacMANA is GATokenType2
+{
+	constructor (address _growthToken)
+		GATokenType2("growth aMANA", "gacMANA", 18, $.GRO, $.aMANA, $.aDAI, _growthToken) public
+	{
+	}
+}
+
+contract gacREN is GATokenType2
+{
+	constructor (address _growthToken)
+		GATokenType2("growth aREN", "gacREN", 18, $.GRO, $.aREN, $.aDAI, _growthToken) public
+	{
+	}
+}
+
+contract gacSNX is GATokenType2
+{
+	constructor (address _growthToken)
+		GATokenType2("growth aSNX", "gacSNX", 18, $.GRO, $.aSNX, $.aDAI, _growthToken) public
+	{
+	}
+}
+
+contract gacYFI is GATokenType2
+{
+	constructor (address _growthToken)
+		GATokenType2("growth aYFI", "gacYFI", 18, $.GRO, $.aYFI, $.aDAI, _growthToken) public
 	{
 	}
 }
