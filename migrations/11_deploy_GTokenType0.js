@@ -1,5 +1,6 @@
 const names = [
-  'gDAI', 'gUSDC', 'gUSDT', 'gETH', 'gWBTC', 'gBAT', 'gZRX', 'gUNI', 'gCOMP',
+  'gDAI', 'gUSDC', 'gUSDT',
+  'gETH', 'gWBTC', 'gBAT', 'gZRX', 'gUNI', 'gCOMP',
   'gENJ', 'gKNC', 'gAAVE', 'gLINK', 'gMANA', 'gREN', 'gSNX', 'gYFI',
 ];
 

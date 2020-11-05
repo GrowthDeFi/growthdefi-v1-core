@@ -39,9 +39,9 @@ module.exports = async (deployer, network) => {
       await token.setExchange(exchange.address);
       await token.setGrowthGulpRange(`${10000e6}`, `${20000e6}`);
     }
-//    if (!['mainnet', 'development', 'testing'].includes(network)) {
+    if (!['mainnet', 'development', 'testing'].includes(network)) {
       await token.setCollateralizationRatio('0', '0');
-//    }
+    }
     if (!['ropsten', 'goerli'].includes(network)) {
       const value = `${1e18}`;
       const exchange = await GUniswapV2Exchange.deployed();
