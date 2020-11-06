@@ -28,7 +28,7 @@ library AaveLendingMarketAbstraction
 		address _pool = $.Aave_AAVE_LENDING_POOL;
 		address _token = AToken(_atoken).underlyingAssetAddress();
 		(_collateralFactor,,,,,,,) = LendingPool(_pool).getReserveConfigurationData(_token);
-		return _collateralFactor.mul(1e18);
+		return _collateralFactor.mul(1e16);
 	}
 
 	function _getMarketAmount(address _atoken) internal view returns (uint256 _marketAmount)
