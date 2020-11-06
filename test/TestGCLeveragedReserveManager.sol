@@ -16,7 +16,7 @@ contract TestGCLeveragedReserveManager is Env
 
 	constructor () public
 	{
-		lrm.init(cDAI, DAI, COMP);
+		lrm.init(cDAI, COMP);
 
 		address exchange = DeployedAddresses.GSushiswapExchange();
 		lrm.setExchange(exchange);
