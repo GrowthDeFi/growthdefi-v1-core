@@ -49,8 +49,7 @@ contract GCTokenType1 is GCTokenBase, GFlashBorrower
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _miningToken)
 		GCTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken, _miningToken, address(0)) public
 	{
-		address _underlyingToken = GC.getUnderlyingToken(_reserveToken);
-		lrm.init(_reserveToken, _underlyingToken, _miningToken);
+		lrm.init(_reserveToken, _miningToken);
 	}
 
 	/**

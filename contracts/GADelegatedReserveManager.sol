@@ -33,8 +33,9 @@ library GADelegatedReserveManager
 		uint256 collateralizationMargin;
 	}
 
-	function init(Self storage _self, address _reserveToken, address _underlyingToken, address _borrowToken, address _growthToken) public
+	function init(Self storage _self, address _reserveToken, address _borrowToken, address _growthToken) public
 	{
+		address _underlyingToken = GA.getUnderlyingToken(_reserveToken);
 		address _borrowUnderlyingToken = GA.getUnderlyingToken(_borrowToken);
 		address _growthReserveToken = GToken(_growthToken).reserveToken();
 		assert(_borrowUnderlyingToken == _growthReserveToken);

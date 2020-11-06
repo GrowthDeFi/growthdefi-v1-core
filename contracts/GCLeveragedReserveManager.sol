@@ -39,13 +39,13 @@ library GCLeveragedReserveManager
 	/**
 	 * @dev Initializes the data structure. This method is exposed publicly.
 	 * @param _reserveToken The ERC-20 token address of the reserve token (cToken).
-	 * @param _underlyingToken The ERC-20 token address of the underlying
-	 *                         token that backs up the reserve token.
 	 * @param _miningToken The ERC-20 token address to be collected from
 	 *                     liquidity mining (COMP).
 	 */
-	function init(Self storage _self, address _reserveToken, address _underlyingToken, address _miningToken) public
+	function init(Self storage _self, address _reserveToken, address _miningToken) public
 	{
+		address _underlyingToken = GC.getUnderlyingToken(_reserveToken);
+
 		_self.reserveToken = _reserveToken;
 		_self.underlyingToken = _underlyingToken;
 
