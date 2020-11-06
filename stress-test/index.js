@@ -313,6 +313,7 @@ async function main(args) {
   console.log(stoken.name, stoken.symbol, stoken.decimals);
   console.log(gtoken.name, gtoken.symbol, gtoken.decimals);
   console.log(ctoken.name, ctoken.symbol, ctoken.decimals);
+  console.log(utoken.name, utoken.symbol, utoken.decimals);
   console.log('approve', await stoken.approve(gtoken.address, '1000000000'));
   console.log('stoken allowance', await stoken.allowance(account, gtoken.address));
   console.log('approve', await ctoken.approve(gtoken.address, '1000000000'));
@@ -325,9 +326,9 @@ async function main(args) {
     console.log('total supply', await gtoken.totalSupply());
     console.log('total reserve', await gtoken.totalReserve());
     const lending = await gtoken.lendingReserveUnderlying();
-    console.log('total lending', lending);
+    console.log('total lending underlying', lending);
     const borrowing = await gtoken.borrowingReserveUnderlying();
-    console.log('total borrowing', borrowing);
+    console.log('total borrowing underlying', borrowing);
     console.log('collateralization', (100 * Number(borrowing)) / Number(lending));
     console.log('gtoken balance', await gtoken.balanceOf(account));
     console.log('ctoken balance', await ctoken.balanceOf(account));
@@ -339,15 +340,19 @@ async function main(args) {
 
   await printSummary();
 
-  console.log('minting ctoken');
-  await mint(ctoken, '100', '1');
-  console.log('minting stoken');
-  await mint(stoken, '1', '1');
-  console.log('minting gtoken');
-  await gtoken.deposit('1');
-  console.log('allocating the pool if required');
-  try { await gtoken.allocateLiquidityPool(await stoken.balanceOf(account), await gtoken.balanceOf(account)); } catch (e) {}
+  console.log('minting utoken');
+  await mint(utoken, '100', '1');
   console.log();
+
+//  console.log('minting ctoken');
+//  await mint(ctoken, '100', '1');
+//  console.log('minting stoken');
+//  await mint(stoken, '1', '1');
+//  console.log('minting gtoken');
+//  await gtoken.deposit('1');
+//  console.log('allocating the pool if required');
+//  try { await gtoken.allocateLiquidityPool(await stoken.balanceOf(account), await gtoken.balanceOf(account)); } catch (e) {}
+//  console.log();
 
   const ACTIONS = [
     'changeRatio',
@@ -387,7 +392,7 @@ async function main(args) {
     if (action == 'deposit') {
       const balance = await ctoken.balanceOf(account);
       const amount = randomAmount(ctoken, balance);
-      console.log('DEPOSIT', amount);
+      console.log('DEPOSIT', amount, ctoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.deposit(amount);
       } catch (e) {
@@ -399,7 +404,7 @@ async function main(args) {
     if (action == 'depositAll') {
       const balance = await ctoken.balanceOf(account);
       const amount = balance;
-      console.log('DEPOSIT ALL', amount);
+      console.log('DEPOSIT ALL', amount, ctoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.deposit(amount);
       } catch (e) {
@@ -411,7 +416,7 @@ async function main(args) {
     if (action == 'withdraw') {
       const balance = await gtoken.balanceOf(account);
       const amount = randomAmount(gtoken, balance);
-      console.log('WITHDRAW', amount);
+      console.log('WITHDRAW', amount, gtoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.withdraw(amount);
       } catch (e) {
@@ -423,7 +428,7 @@ async function main(args) {
     if (action == 'withdrawAll') {
       const balance = await gtoken.balanceOf(account);
       const amount = balance;
-      console.log('WITHDRAW ALL', amount);
+      console.log('WITHDRAW ALL', amount, gtoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.withdraw(amount);
       } catch (e) {
@@ -435,7 +440,7 @@ async function main(args) {
     if (action == 'depositUnderlying') {
       const balance = await utoken.balanceOf(account);
       const amount = randomAmount(utoken, balance);
-      console.log('DEPOSIT UNDERLYING', amount);
+      console.log('DEPOSIT UNDERLYING', amount, utoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.depositUnderlying(amount);
       } catch (e) {
@@ -447,7 +452,7 @@ async function main(args) {
     if (action == 'depositUnderlyingAll') {
       const balance = await utoken.balanceOf(account);
       const amount = balance;
-      console.log('DEPOSIT UNDERLYING ALL', amount);
+      console.log('DEPOSIT UNDERLYING ALL', amount, utoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.depositUnderlying(amount);
       } catch (e) {
@@ -459,7 +464,7 @@ async function main(args) {
     if (action == 'withdrawUnderlying') {
       const balance = await gtoken.balanceOf(account);
       const amount = randomAmount(gtoken, balance);
-      console.log('WITHDRAW UNDERLYING', amount);
+      console.log('WITHDRAW UNDERLYING', amount, gtoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.withdrawUnderlying(amount);
       } catch (e) {
@@ -471,7 +476,7 @@ async function main(args) {
     if (action == 'withdrawUnderlyingAll') {
       const balance = await gtoken.balanceOf(account);
       const amount = balance;
-      console.log('WITHDRAW UNDERLYING ALL', amount);
+      console.log('WITHDRAW UNDERLYING ALL', amount, gtoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.withdrawUnderlying(amount);
       } catch (e) {
