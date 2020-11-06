@@ -323,6 +323,10 @@ contract gcCOMP is GCTokenType2
 	}
 }
 
+/**
+ * @notice Definition of gacENJ. As a gaToken Type 2, it uses aENJ as reserve
+ * which serves as collateral for minting gDAI.
+ */
 contract gacENJ is GATokenType2
 {
 	constructor (address _growthToken)
@@ -331,6 +335,10 @@ contract gacENJ is GATokenType2
 	}
 }
 
+/**
+ * @notice Definition of gacKNC. As a gaToken Type 2, it uses aKNC as reserve
+ * which serves as collateral for minting gDAI.
+ */
 contract gacKNC is GATokenType2
 {
 	constructor (address _growthToken)
@@ -339,6 +347,10 @@ contract gacKNC is GATokenType2
 	}
 }
 
+/**
+ * @notice Definition of gacAAVE. As a gaToken Type 2, it uses aAAVE as reserve
+ * which serves as collateral for minting gDAI.
+ */
 contract gacAAVE is GATokenType2
 {
 	constructor (address _growthToken)
@@ -347,6 +359,10 @@ contract gacAAVE is GATokenType2
 	}
 }
 
+/**
+ * @notice Definition of gacLINK. As a gaToken Type 2, it uses aLINK as reserve
+ * which serves as collateral for minting gDAI.
+ */
 contract gacLINK is GATokenType2
 {
 	constructor (address _growthToken)
@@ -355,6 +371,10 @@ contract gacLINK is GATokenType2
 	}
 }
 
+/**
+ * @notice Definition of gacMANA. As a gaToken Type 2, it uses aMANA as reserve
+ * which serves as collateral for minting gDAI.
+ */
 contract gacMANA is GATokenType2
 {
 	constructor (address _growthToken)
@@ -363,6 +383,10 @@ contract gacMANA is GATokenType2
 	}
 }
 
+/**
+ * @notice Definition of gacREN. As a gaToken Type 2, it uses aREN as reserve
+ * which serves as collateral for minting gDAI.
+ */
 contract gacREN is GATokenType2
 {
 	constructor (address _growthToken)
@@ -371,6 +395,10 @@ contract gacREN is GATokenType2
 	}
 }
 
+/**
+ * @notice Definition of gacSNX. As a gaToken Type 2, it uses aSNX as reserve
+ * which serves as collateral for minting gDAI.
+ */
 contract gacSNX is GATokenType2
 {
 	constructor (address _growthToken)
@@ -379,6 +407,10 @@ contract gacSNX is GATokenType2
 	}
 }
 
+/**
+ * @notice Definition of gacYFI. As a gaToken Type 2, it uses aYFI as reserve
+ * which serves as collateral for minting gDAI.
+ */
 contract gacYFI is GATokenType2
 {
 	constructor (address _growthToken)
