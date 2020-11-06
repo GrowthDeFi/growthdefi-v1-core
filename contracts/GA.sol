@@ -7,7 +7,7 @@ library GA
 {
 	function getUnderlyingToken(address _atoken) public view returns (address _token) { return AaveLendingMarketAbstraction._getUnderlyingToken(_atoken); }
 	function getCollateralRatio(address _atoken) public view returns (uint256 _collateralFactor) { return AaveLendingMarketAbstraction._getCollateralRatio(_atoken); }
-//	function getMarketAmount(address _atoken) public view returns (uint256 _marketAmount) { return AaveLendingMarketAbstraction._getMarketAmount(_atoken); }
+	function getMarketAmount(address _atoken) public view returns (uint256 _marketAmount) { return AaveLendingMarketAbstraction._getMarketAmount(_atoken); }
 	function getLiquidityAmount(address _atoken) public view returns (uint256 _liquidityAmount) { return AaveLendingMarketAbstraction._getLiquidityAmount(_atoken); }
 //	function getAvailableAmount(address _atoken, uint256 _marginAmount) public view returns (uint256 _availableAmount) { return AaveLendingMarketAbstraction._getAvailableAmount(_atoken, _marginAmount); }
 	function getExchangeRate(address _atoken) public pure returns (uint256 _exchangeRate) { return AaveLendingMarketAbstraction._getExchangeRate(_atoken); }
