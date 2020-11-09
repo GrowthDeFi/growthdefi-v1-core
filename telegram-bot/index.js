@@ -23,6 +23,13 @@ function exit() {
   process.exit(0);
 }
 
+function interrupt(f) {
+  process.on('SIGINT', f);
+  process.on('SIGTERM', f);
+  process.on('SIGUSR1', f);
+  process.on('SIGUSR2', f);
+}
+
 function entrypoint(main) {
   const args = process.argv;
   (async () => { try { await main(args); } catch (e) { abort(e); } exit(); })();
@@ -238,23 +245,52 @@ async function checkVitals(gctoken) {
 }
 
 async function main(args) {
-  const names = ['gcDAI', 'gcUSDC', 'gcUSDT', 'gcETH', 'gcWBTC', 'gcBAT', 'gcZRX', 'gcUNI'];
+  await sendMessage('<i>Monitoring initiated</i>');
+
+  let interrupted = false;
+  interrupt(() => {
+    if (!interrupted) {
+      interrupted = true;
+      sendMessage('<i>Monitoring interrupted</i>'); // no await
+    }
+  });
+
+  const names = ['gcDAI', 'gcUSDC'];
+  const addresses = {
+    'gcDAI': {
+      'mainnet': '0x8c659d745eB24DF270A952F68F4B1d6817c3795C',
+    },
+    'gcUSDC': {
+      'mainnet': '0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D',
+    },
+  };
 
   const gctokens = [];
   for (const name of names) {
-    const address = require('../build/contracts/' + name + '.json').networks[networkId].address;
+    const address = (addresses[name] || {})[network] || require('../build/contracts/' + name + '.json').networks[networkId].address;
     gctokens.push(await newGCToken(address));
   }
 
+  let lastMessage = '';
   while (true) {
-    const lines = [];
-    for (const gctoken of gctokens) {
-      const vitals = await checkVitals(gctoken);
-      const line = '<b>' + gctoken.symbol + '</b> <i>' + vitals.collateralizationRatio + '</i>';
-      lines.push(line);
+    console.log(new Date().toISOString());
+    try {
+      const lines = [];
+      for (const gctoken of gctokens) {
+        const vitals = await checkVitals(gctoken);
+        const line = '<b>' + gctoken.symbol + '</b> <i>' + vitals.collateralizationRatio + '</i>';
+        lines.push(line);
+      }
+      const message = lines.join('\n');
+      if (message != lastMessage) {
+        console.log(message);
+        await sendMessage(message);
+        lastMessage = message;
+      }
+    } catch (e) {
+      console.log('FAILURE ' + e.message);
+      sendMessage('<i>Monitoring failure (' + e.message + ')</i>'); // no await
     }
-    const message = lines.join('\n');
-    await sendMessage(message);
     await sleep(60*1000);
   }
 }

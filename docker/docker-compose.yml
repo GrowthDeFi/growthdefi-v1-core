@@ -16,5 +16,5 @@ services:
     command: node /repo/telegram-bot/index.js
     volumes: [ "../:/repo/" ]
     environment:
-      NETWORK: testing
+      NETWORK: mainnet
     restart: always
