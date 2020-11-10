@@ -140,11 +140,7 @@ library GCDelegatedReserveManager
 			uint256 _reserveAmount = GC.fetchLendAmount(_self.reserveToken);
 			_roomAmount = G.min(_roomAmount, _reserveAmount);
 			uint256 _newReserveAmount = _reserveAmount.sub(_roomAmount);
-			// TODO review if this is necessary (r1 * c) / (r2 * c) => r1 / r2 (if c > 0)
-			uint256 _collateralRatio = _self._calcCollateralizationRatio();
-			uint256 _availableAmount = _reserveAmount.mul(_collateralRatio).div(1e18);
-			uint256 _newAvailableAmount = _newReserveAmount.mul(_collateralRatio).div(1e18);
-			_scallingRatio = _availableAmount > 0 ? uint256(1e18).mul(_newAvailableAmount).div(_availableAmount) : 1e18;
+			_scallingRatio = _reserveAmount > 0 ? uint256(1e18).mul(_newReserveAmount).div(_reserveAmount) : 0;
 		}
 		uint256 _borrowAmount = GC.fetchBorrowAmount(_self.borrowToken);
 		uint256 _newBorrowAmount;
@@ -153,13 +149,11 @@ library GCDelegatedReserveManager
 		{
 			uint256 _freeAmount = GC.getLiquidityAmount(_self.borrowToken);
 			uint256 _totalAmount = _borrowAmount.add(_freeAmount);
-			uint256 _idealAmount = _totalAmount.mul(_self.collateralizationRatio).div(1e18);
-			uint256 _marginAmount = _totalAmount.mul(_self.collateralizationMargin).div(1e18);
-			_newBorrowAmount = _idealAmount.mul(_scallingRatio).div(1e18);
-			uint256 _newMarginAmount = _marginAmount.mul(_scallingRatio).div(1e18);
-			_newMarginAmount = G.min(_newMarginAmount, _newBorrowAmount);
-			_minBorrowAmount = _newBorrowAmount.sub(_newMarginAmount);
-			_maxBorrowAmount = _newBorrowAmount.add(_newMarginAmount);
+			uint256 _newTotalAmount = _totalAmount.mul(_scallingRatio).div(1e18);
+			_newBorrowAmount = _newTotalAmount.mul(_self.collateralizationRatio).div(1e18);
+			uint256 _newMarginAmount = _newTotalAmount.mul(_self.collateralizationMargin).div(1e18);
+			_minBorrowAmount = _newBorrowAmount.sub(G.min(_newMarginAmount, _newBorrowAmount));
+			_maxBorrowAmount = G.min(_newBorrowAmount.add(_newMarginAmount), _newTotalAmount);
 		}
 		if (_borrowAmount < _minBorrowAmount) {
 			uint256 _amount = _newBorrowAmount.sub(_borrowAmount);
