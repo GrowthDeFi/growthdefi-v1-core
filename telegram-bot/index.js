@@ -79,6 +79,7 @@ const WEBSOCKET_PROVIDER_URL = {
 };
 
 const web3 = new Web3(new HDWalletProvider(privateKey, HTTP_PROVIDER_URL[network]));
+/*
 const web3ws = new Web3(new Web3.providers.HttpProvider(HTTP_PROVIDER_URL[network]));
 
 function connect() {
@@ -134,6 +135,7 @@ function logSubscribe(events, f) {
     if (e) return abort(e);
   });
 }
+*/
 
 function valid(amount, decimals) {
   const regex = new RegExp(`^\\d+${decimals > 0 ? `(\\.\\d{1,${decimals}})?` : ''}$`);
@@ -163,9 +165,20 @@ if (!telegramBotApiKey) throw new Error('Unknown telegram bot api key');
 const telegramBotChatId = process.env['TELEGRAM_BOT_CHAT_ID'];
 if (!telegramBotChatId) throw new Error('Unknown telegram bot chat id');
 
-async function sendMessage(text) {
-  const url = 'https://api.telegram.org/bot'+ telegramBotApiKey +'/sendMessage';
-  await axios.post(url, { chat_id: telegramBotChatId, text, parse_mode: 'HTML' });
+let lastMessage = '';
+
+async function sendMessage(message) {
+  if (message !== lastMessage) {
+    console.log(new Date().toISOString());
+    console.log(message);
+    try {
+      const url = 'https://api.telegram.org/bot'+ telegramBotApiKey +'/sendMessage';
+      await axios.post(url, { chat_id: telegramBotChatId, text: message, parse_mode: 'HTML' });
+      lastMessage = message;
+    } catch (e) {
+      console.log('FAILURE', e.message);
+    }
+  }
 }
 
 // main
@@ -244,53 +257,62 @@ async function checkVitals(gctoken) {
   }
 }
 
+const DEFAULT_ADDRESS = {
+  'gcDAI': {
+    'mainnet': '0x8c659d745eB24DF270A952F68F4B1d6817c3795C',
+  },
+  'gcUSDC': {
+    'mainnet': '0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D',
+  },
+};
+
+function getContractAddress(name) {
+  return (DEFAULT_ADDRESS[name] || {})[network] || require('../build/contracts/' + name + '.json').networks[networkId].address;
+}
+
+async function getTokens(names) {
+  const gctokens = [];
+  for (const name of names) {
+    const address = getContractAddress(name);
+    const gctoken = await newGCToken(address);
+    gctokens.push(gctoken);
+  }
+  return gctokens;
+}
+
 async function main(args) {
   await sendMessage('<i>Monitoring initiated</i>');
 
   let interrupted = false;
-  interrupt(() => {
+  interrupt(async () => {
     if (!interrupted) {
       interrupted = true;
-      sendMessage('<i>Monitoring interrupted</i>'); // no await
+      await sendMessage('<i>Monitoring interrupted</i>');
+      exit();
     }
   });
 
   const names = ['gcDAI', 'gcUSDC'];
-  const addresses = {
-    'gcDAI': {
-      'mainnet': '0x8c659d745eB24DF270A952F68F4B1d6817c3795C',
-    },
-    'gcUSDC': {
-      'mainnet': '0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D',
-    },
-  };
 
-  const gctokens = [];
-  for (const name of names) {
-    const address = (addresses[name] || {})[network] || require('../build/contracts/' + name + '.json').networks[networkId].address;
-    gctokens.push(await newGCToken(address));
-  }
+  let gctokens = null;
 
-  let lastMessage = '';
   while (true) {
-    console.log(new Date().toISOString());
+    let message;
     try {
+      if (gctokens === null) {
+        gctokens = await getTokens(names);
+      }
       const lines = [];
       for (const gctoken of gctokens) {
         const vitals = await checkVitals(gctoken);
         const line = '<b>' + gctoken.symbol + '</b> <i>' + vitals.collateralizationRatio + '</i>';
         lines.push(line);
       }
-      const message = lines.join('\n');
-      if (message != lastMessage) {
-        console.log(message);
-        await sendMessage(message);
-        lastMessage = message;
-      }
+      message = lines.join('\n');
     } catch (e) {
-      console.log('FAILURE ' + e.message);
-      sendMessage('<i>Monitoring failure (' + e.message + ')</i>'); // no await
+      message = '<i>Monitoring failure (' + e.message + ')</i>';
     }
+    await sendMessage(message);
     await sleep(60*1000);
   }
 }
