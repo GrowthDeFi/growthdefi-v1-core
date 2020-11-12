@@ -28,6 +28,8 @@ function interrupt(f) {
   process.on('SIGTERM', f);
   process.on('SIGUSR1', f);
   process.on('SIGUSR2', f);
+  process.on('uncaughtException', f);
+  process.on('unhandledRejection', f);
 }
 
 function entrypoint(main) {
@@ -78,7 +80,7 @@ const WEBSOCKET_PROVIDER_URL = {
   'testing': 'http://' + testServer + ':8545/',
 };
 
-const web3 = new Web3(new HDWalletProvider(privateKey, HTTP_PROVIDER_URL[network]));
+let web3 = null;
 /*
 const web3ws = new Web3(new Web3.providers.HttpProvider(HTTP_PROVIDER_URL[network]));
 
@@ -299,6 +301,9 @@ async function main(args) {
   while (true) {
     let message;
     try {
+      if (web3 === null) {
+        web3 = new Web3(new HDWalletProvider(privateKey, HTTP_PROVIDER_URL[network]));
+      }
       if (gctokens === null) {
         gctokens = await getTokens(names);
       }
