@@ -36,7 +36,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	 * @param _miningToken The ERC-20 token used for liquidity mining on
 	 *                     compound (COMP).
 	 * @param _growthToken The ERC-20 token address of the associated
-	 *                     gcToken Type 1, for gcTokens Type 2, or address(0),
+	 *                     gToken, for gcTokens Type 2, or address(0),
 	 *                     if this contract is a gcToken Type 1.
 	 */
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _miningToken, address _growthToken)
@@ -142,7 +142,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 	}
 
 	/**
-	 * @notice Provides the compound exchange rate since their last update.
+	 * @notice Provides the Compound exchange rate since their last update.
 	 * @return _exchangeRate The exchange rate between cToken and its
 	 *                       underlying asset
 	 */

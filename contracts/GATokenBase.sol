@@ -10,12 +10,12 @@ import { GA } from "./GA.sol";
 
 /**
  * @notice This abstract contract provides the basis implementation for all
- *         gcTokens, i.e. gTokens that use Compound cTokens as reserve, and
+ *         gaTokens, i.e. gTokens that use Aave aTokens as reserve, and
  *         implements the common functionality shared amongst them.
  *         In a nutshell, it extends the functinality of the GTokenBase contract
- *         to support operating directly using the cToken underlying asset.
+ *         to support operating directly using the aToken underlying asset.
  *         Therefore this contract provides functions that encapsulate minting
- *         and redeeming of cTokens internally, allowing users to interact with
+ *         and redeeming of aTokens internally, allowing users to interact with
  *         the contract providing funds directly in their underlying asset.
  */
 abstract contract GATokenBase is GTokenBase, GCToken
@@ -25,17 +25,15 @@ abstract contract GATokenBase is GTokenBase, GCToken
 	address public immutable override underlyingToken;
 
 	/**
-	 * @dev Constructor for the gcToken contract.
+	 * @dev Constructor for the gaToken contract.
 	 * @param _name The ERC-20 token name.
 	 * @param _symbol The ERC-20 token symbol.
 	 * @param _decimals The ERC-20 token decimals.
 	 * @param _stakesToken The ERC-20 token address to be used as stakes
 	 *                     token (GRO).
 	 * @param _reserveToken The ERC-20 token address to be used as reserve
-	 *                      token (e.g. cDAI for gcDAI).
-	 * @param _growthToken The ERC-20 token address of the associated
-	 *                     gcToken Type 1, for gcTokens Type 2, or address(0),
-	 *                     if this contract is a gcToken Type 1.
+	 *                      token (e.g. aLINK for gacLINK).
+	 * @param _growthToken The ERC-20 token address of the associated gToken.
 	 */
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _growthToken)
 		GTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken) public
@@ -47,11 +45,11 @@ abstract contract GATokenBase is GTokenBase, GCToken
 	}
 
 	/**
-	 * @notice Allows for the beforehand calculation of the cToken amount
+	 * @notice Allows for the beforehand calculation of the aToken amount
 	 *         given the amount of the underlying token and an exchange rate.
-	 * @param _underlyingCost The cost in terms of the cToken underlying asset.
+	 * @param _underlyingCost The cost in terms of the aToken underlying asset.
 	 * @param _exchangeRate The given exchange rate as provided by exchangeRate().
-	 * @return _cost The equivalent cost in terms of cToken
+	 * @return _cost The equivalent cost in terms of aToken
 	 */
 	function calcCostFromUnderlyingCost(uint256 _underlyingCost, uint256 _exchangeRate) public pure override returns (uint256 _cost)
 	{
@@ -60,10 +58,10 @@ abstract contract GATokenBase is GTokenBase, GCToken
 
 	/**
 	 * @notice Allows for the beforehand calculation of the underlying token
-	 *         amount given the cToken amount and an exchange rate.
-	 * @param _cost The cost in terms of the cToken.
+	 *         amount given the aToken amount and an exchange rate.
+	 * @param _cost The cost in terms of the aToken.
 	 * @param _exchangeRate The given exchange rate as provided by exchangeRate().
-	 * @return _underlyingCost The equivalent cost in terms of the cToken underlying asset.
+	 * @return _underlyingCost The equivalent cost in terms of the aToken underlying asset.
 	 */
 	function calcUnderlyingCostFromCost(uint256 _cost, uint256 _exchangeRate) public pure override returns (uint256 _underlyingCost)
 	{
@@ -140,8 +138,8 @@ abstract contract GATokenBase is GTokenBase, GCToken
 	}
 
 	/**
-	 * @notice Provides the compound exchange rate since their last update.
-	 * @return _exchangeRate The exchange rate between cToken and its
+	 * @notice Provides the Aave exchange rate since their last update.
+	 * @return _exchangeRate The exchange rate between aToken and its
 	 *                       underlying asset
 	 */
 	function exchangeRate() public view override returns (uint256 _exchangeRate)
@@ -161,9 +159,9 @@ abstract contract GATokenBase is GTokenBase, GCToken
 
 	/**
 	 * @notice Provides the total amount of the underlying asset (or equivalent)
-	 *         this contract is currently lending on Compound.
+	 *         this contract is currently lending on Aave.
 	 * @return _lendingReserveUnderlying The underlying asset lending
-	 *                                   balance on Compound.
+	 *                                   balance on Aave.
 	 */
 	function lendingReserveUnderlying() public view virtual override returns (uint256 _lendingReserveUnderlying)
 	{
@@ -172,9 +170,9 @@ abstract contract GATokenBase is GTokenBase, GCToken
 
 	/**
 	 * @notice Provides the total amount of the underlying asset (or equivalent)
-	 *         this contract is currently borrowing on Compound.
+	 *         this contract is currently borrowing on Aave.
 	 * @return _borrowingReserveUnderlying The underlying asset borrowing
-	 *                                     balance on Compound.
+	 *                                     balance on Aave.
 	 */
 	function borrowingReserveUnderlying() public view virtual override returns (uint256 _borrowingReserveUnderlying)
 	{
@@ -182,7 +180,7 @@ abstract contract GATokenBase is GTokenBase, GCToken
 	}
 
 	/**
-	 * @notice Performs the minting of gcToken shares upon the deposit of the
+	 * @notice Performs the minting of gaToken shares upon the deposit of the
 	 *         cToken underlying asset. The funds will be pulled in by this
 	 *         contract, therefore they must be previously approved. This
 	 *         function builds upon the GTokenBase deposit function. See
@@ -206,11 +204,11 @@ abstract contract GATokenBase is GTokenBase, GCToken
 	}
 
 	/**
-	 * @notice Performs the burning of gcToken shares upon the withdrawal of
+	 * @notice Performs the burning of gaToken shares upon the withdrawal of
 	 *         the underlying asset. This function builds upon the
 	 *         GTokenBase withdrawal function. See GTokenBase.sol for
 	 *         further documentation.
-	 * @param _grossShares The gross amount of this gcToken shares being
+	 * @param _grossShares The gross amount of this gaToken shares being
 	 *                     redeemed in the operation.
 	 */
 	function withdrawUnderlying(uint256 _grossShares) public override nonReentrant
