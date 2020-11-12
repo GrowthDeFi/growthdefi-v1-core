@@ -72,38 +72,45 @@ presented below. Their actual functionality is described in the next section.
   given point in time.
 * **Abstract contract files** that provide the basis implementation of shared
   functionality for their respective interface. These are basically
-  [GTokenBase.sol](contracts/GTokenBase.sol) for gTokens and
-  [GCTokenBase.sol](contracts/GCTokenBase.sol) for gcTokens.
+  [GTokenBase.sol](contracts/GTokenBase.sol) for gTokens,
+  [GCTokenBase.sol](contracts/GCTokenBase.sol) for gcTokens, and
+  [GATokenBase.sol](contracts/GATokenBase.sol) for gaTokens.
   Note that gTokens extend the ERC-20 specification and we use the
-  [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/v3.1.0)
+  [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/v3.2.0)
   library as basis for their implementation. Besides the ERC-20 related
   functionality we also make use of OpenZeppelin's Ownable to guard admin-only
   public functions and ReentrancyGuard to conservatively guard all publicly
   exposed functions against reentrancy.
 * **Concrete contract files** that derive from the abstract contract files by
   filling in the specific details purposedly left open. These provide the
-  final/leaf contracts in the gTokens hierarchy. At the moment these comprise
-  the gcTokens implemented in two flavors: Type 1 gcTokens
-  [GCTokenType1.sol](contracts/GCTokenType1.sol); and Type 2 gcTokens
-  [GCTokenType2.sol](contracts/GCTokenType2.sol). _Note that the Type 2 is
-  currently under development and should not yet be regarded as final._
+  final/leaf contracts in the gTokens hierarchy. The list comprises
+  gTokens Type 0 (a.k.a. PMTs) [GTokenType0.sol](contracts/GTokenType0.sol);
+  gcTokens implemented in two flavors: Type 1 gcTokens
+  [GCTokenType1.sol](contracts/GCTokenType1.sol), and Type 2 gcTokens
+  [GCTokenType2.sol](contracts/GCTokenType2.sol); and the gaTokens Type 2
+  [GATokenType2.sol](contracts/GATokenType2.sol).
 * **Component contracts as (public) libraries** that provide core functionality
   implementation. Besides properly encapsulating the functionality they also
   allow working around the contract size limitations of the EVM.
   These are [GLiquidityPoolManager.sol](contracts/GLiquidityPoolManager.sol)
   for liquidity pool management/handling;
+  [GPortfolioReserveManager.sol](contracts/GPortfolioReserveManager.sol) for
+  multi token exposure allowing a distribution of the reserve to a list
+  of gTokens in a amind-defined percentual allocation (used by Type 0 gTokens);
   [GCLeveragedReserveManager.sol](contracts/GCLeveragedReserveManager.sol) for
   leveraged reserve management/handling where flash loans are used to maintain
   the desired leverage level over lending/borrowing of the reserve of cTokens
   (used by Type 1 gcTokens);
   [GCDelegatedReserveManager.sol](contracts/GCDelegatedReserveManager.sol) for
   delegated reserve management/handling where borrowing is employed to mint
-  Type 1 gcTokens that are used to maintain and grow the cToken reserve
+  other gTokens that are used to maintain and grow the cToken reserve
   (used by Type 2 gcTokens);
-* **A single entrypoint file** [GTokens.sol](contracts/GTokens.sol) that succinctly declares
-  all the available gTokens: gcDAI, gcUSDC, gcUSDT (of Type 1) and gcETH,
-  gcWBTC, gcBAT, gcZRX and gcUNI (of Type 2). _Note that the Type 2 is
-  currently under development and should not yet be regarded as final._
+  [GADelegatedReserveManager.sol](contracts/GADelegatedReserveManager.sol) for
+  delegated reserve management/handling where borrowing is employed to mint
+  other gTokens that are used to maintain and grow the aToken reserve
+  (used by Type 2 gaTokens);
+* **A single entrypoint file** [GTokens.sol](contracts/GTokens.sol) that
+  succinctly declares all the available gTokens.
 * **A public library** [G.sol](contracts/G.sol) that compiles and serves as
   entrypoint to all the relevant functions available under the
   [/modules/](contracts/modules) folder. This library exists mostly to work
@@ -143,10 +150,19 @@ hierarchy:
       * gcBAT
       * gcZRX
       * gcUNI
+  * gaToken
+    * gaToken (Type 2)
+      * gacENJ
+      * gacKNC
+      * gacAAVE
+      * gacLINK
+      * gacMANA
+      * gacREN
+      * gacSNX
+      * gacYFI
 
-Currently all gTokens are also gcTokens, because they are based on their
-Compound cToken counterpart. Other gTokens based on other platforms
-(such as Aave, Curve, etc) will be added to the hierarchy in the future.
+Other gTokens based on other platforms (such as Aave, Curve, etc) will be added
+to the hierarchy in the future.
 
 ### Basic gToken functionality
 
@@ -256,6 +272,16 @@ Relevant implementation files:
 * [GCTokenType2.sol](contracts/GCTokenType2.sol)
 * [GCDelegatedReserveManager.sol](contracts/GCDelegatedReserveManager.sol)
 
+### Basic gaToken Type 2 functionality
+
+_Under construction_
+
+Relevant implementation files:
+
+* [GATokenBase.sol](contracts/GATokenBase.sol)
+* [GATokenType2.sol](contracts/GATokenType2.sol)
+* [GADelegatedReserveManager.sol](contracts/GADelegatedReserveManager.sol)
+
 ## Building, Deploying and Testing
 
 configuring the repository:
@@ -268,8 +294,7 @@ Compiling the smart contracts:
 
 Deploying the smart contracts (locally):
 
-    $ ./start-mainnet-fork.sh
-    $ npm run deploy
+    $ ./start-mainnet-fork.sh & npm run deploy
 
 Deploying the smart contracts to mainnet:
 
@@ -277,11 +302,9 @@ Deploying the smart contracts to mainnet:
 
 Running the unit tests:
 
-    $ ./start-mainnet-fork.sh
-    $ npm run test
+    $ ./start-mainnet-fork.sh & npm run test
 
 Running the stress test:
 
-    $ ./start-mainnet-fork.sh
-    $ npm run stress-test
+    $ ./start-mainnet-fork.sh & npm run stress-test
 
