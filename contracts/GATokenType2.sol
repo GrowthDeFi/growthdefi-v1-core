@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.6.0;
 
-import { GAFormulae } from "./GAFormulae.sol";
+import { GCFormulae } from "./GCFormulae.sol";
 import { GATokenBase } from "./GATokenBase.sol";
 import { GADelegatedReserveManager } from "./GADelegatedReserveManager.sol";
 import { G } from "./G.sol";
@@ -34,6 +34,11 @@ contract GATokenType2 is GATokenBase
 		return drm.exchange;
 	}
 
+	function miningGulpRange() public view override returns (uint256 _miningMinGulpAmount, uint256 _miningMaxGulpAmount)
+	{
+		return (0, 0);
+	}
+
 	function growthGulpRange() public view override returns (uint256 _growthMinGulpAmount, uint256 _growthMaxGulpAmount)
 	{
 		return (drm.growthMinGulpAmount, drm.growthMaxGulpAmount);
@@ -47,6 +52,11 @@ contract GATokenType2 is GATokenBase
 	function setExchange(address _exchange) public override onlyOwner nonReentrant
 	{
 		drm.setExchange(_exchange);
+	}
+
+	function setMiningGulpRange(uint256 _miningMinGulpAmount, uint256 _miningMaxGulpAmount) public override /*onlyOwner nonReentrant*/
+	{
+		_miningMinGulpAmount; _miningMaxGulpAmount; // silences warnings
 	}
 
 	function setGrowthGulpRange(uint256 _growthMinGulpAmount, uint256 _growthMaxGulpAmount) public override onlyOwner nonReentrant
@@ -66,6 +76,6 @@ contract GATokenType2 is GATokenBase
 
 	function _prepareWithdrawal(uint256 _cost) internal override returns (bool _success)
 	{
-		return drm.adjustReserve(GAFormulae._calcUnderlyingCostFromCost(_cost, GA.fetchExchangeRate(reserveToken)));
+		return drm.adjustReserve(GCFormulae._calcUnderlyingCostFromCost(_cost, GA.fetchExchangeRate(reserveToken)));
 	}
 }

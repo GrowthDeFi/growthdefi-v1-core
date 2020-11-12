@@ -3,8 +3,8 @@ pragma solidity ^0.6.0;
 
 import { GFormulae } from "./GFormulae.sol";
 import { GTokenBase } from "./GTokenBase.sol";
-import { GAToken } from "./GAToken.sol";
-import { GAFormulae } from "./GAFormulae.sol";
+import { GCToken } from "./GCToken.sol";
+import { GCFormulae } from "./GCFormulae.sol";
 import { G } from "./G.sol";
 import { GA } from "./GA.sol";
 
@@ -18,8 +18,9 @@ import { GA } from "./GA.sol";
  *         and redeeming of cTokens internally, allowing users to interact with
  *         the contract providing funds directly in their underlying asset.
  */
-abstract contract GATokenBase is GTokenBase, GAToken
+abstract contract GATokenBase is GTokenBase, GCToken
 {
+	address public immutable override miningToken; // unused
 	address public immutable override growthToken;
 	address public immutable override underlyingToken;
 
@@ -39,6 +40,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _growthToken)
 		GTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken) public
 	{
+		miningToken = address(0);
 		growthToken = _growthToken;
 		address _underlyingToken = GA.getUnderlyingToken(_reserveToken);
 		underlyingToken = _underlyingToken;
@@ -53,7 +55,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	 */
 	function calcCostFromUnderlyingCost(uint256 _underlyingCost, uint256 _exchangeRate) public pure override returns (uint256 _cost)
 	{
-		return GAFormulae._calcCostFromUnderlyingCost(_underlyingCost, _exchangeRate);
+		return GCFormulae._calcCostFromUnderlyingCost(_underlyingCost, _exchangeRate);
 	}
 
 	/**
@@ -65,7 +67,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	 */
 	function calcUnderlyingCostFromCost(uint256 _cost, uint256 _exchangeRate) public pure override returns (uint256 _underlyingCost)
 	{
-		return GAFormulae._calcUnderlyingCostFromCost(_cost, _exchangeRate);
+		return GCFormulae._calcUnderlyingCostFromCost(_cost, _exchangeRate);
 	}
 
 	/**
@@ -82,7 +84,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	 */
 	function calcDepositSharesFromUnderlyingCost(uint256 _underlyingCost, uint256 _totalReserve, uint256 _totalSupply, uint256 _depositFee, uint256 _exchangeRate) public pure override returns (uint256 _netShares, uint256 _feeShares)
 	{
-		return GAFormulae._calcDepositSharesFromUnderlyingCost(_underlyingCost, _totalReserve, _totalSupply, _depositFee, _exchangeRate);
+		return GCFormulae._calcDepositSharesFromUnderlyingCost(_underlyingCost, _totalReserve, _totalSupply, _depositFee, _exchangeRate);
 	}
 
 	/**
@@ -99,7 +101,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	 */
 	function calcDepositUnderlyingCostFromShares(uint256 _netShares, uint256 _totalReserve, uint256 _totalSupply, uint256 _depositFee, uint256 _exchangeRate) public pure override returns (uint256 _underlyingCost, uint256 _feeShares)
 	{
-		return GAFormulae._calcDepositUnderlyingCostFromShares(_netShares, _totalReserve, _totalSupply, _depositFee, _exchangeRate);
+		return GCFormulae._calcDepositUnderlyingCostFromShares(_netShares, _totalReserve, _totalSupply, _depositFee, _exchangeRate);
 	}
 
 	/**
@@ -117,7 +119,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	 */
 	function calcWithdrawalSharesFromUnderlyingCost(uint256 _underlyingCost, uint256 _totalReserve, uint256 _totalSupply, uint256 _withdrawalFee, uint256 _exchangeRate) public pure override returns (uint256 _grossShares, uint256 _feeShares)
 	{
-		return GAFormulae._calcWithdrawalSharesFromUnderlyingCost(_underlyingCost, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
+		return GCFormulae._calcWithdrawalSharesFromUnderlyingCost(_underlyingCost, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
 	}
 
 	/**
@@ -134,7 +136,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	 */
 	function calcWithdrawalUnderlyingCostFromShares(uint256 _grossShares, uint256 _totalReserve, uint256 _totalSupply, uint256 _withdrawalFee, uint256 _exchangeRate) public pure override returns (uint256 _underlyingCost, uint256 _feeShares)
 	{
-		return GAFormulae._calcWithdrawalUnderlyingCostFromShares(_grossShares, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
+		return GCFormulae._calcWithdrawalUnderlyingCostFromShares(_grossShares, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
 	}
 
 	/**
@@ -154,7 +156,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	 */
 	function totalReserveUnderlying() public view virtual override returns (uint256 _totalReserveUnderlying)
 	{
-		return GAFormulae._calcUnderlyingCostFromCost(totalReserve(), exchangeRate());
+		return GCFormulae._calcUnderlyingCostFromCost(totalReserve(), exchangeRate());
 	}
 
 	/**
@@ -192,7 +194,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 	{
 		address _from = msg.sender;
 		require(_underlyingCost > 0, "underlying cost must be greater than 0");
-		uint256 _cost = GAFormulae._calcCostFromUnderlyingCost(_underlyingCost, exchangeRate());
+		uint256 _cost = GCFormulae._calcCostFromUnderlyingCost(_underlyingCost, exchangeRate());
 		(uint256 _netShares, uint256 _feeShares) = GFormulae._calcDepositSharesFromCost(_cost, totalReserve(), totalSupply(), depositFee());
 		require(_netShares > 0, "shares must be greater than 0");
 		G.pullFunds(underlyingToken, _from, _underlyingCost);
@@ -216,7 +218,7 @@ abstract contract GATokenBase is GTokenBase, GAToken
 		address _from = msg.sender;
 		require(_grossShares > 0, "shares must be greater than 0");
 		(uint256 _cost, uint256 _feeShares) = GFormulae._calcWithdrawalCostFromShares(_grossShares, totalReserve(), totalSupply(), withdrawalFee());
-		uint256 _underlyingCost = GAFormulae._calcUnderlyingCostFromCost(_cost, exchangeRate());
+		uint256 _underlyingCost = GCFormulae._calcUnderlyingCostFromCost(_cost, exchangeRate());
 		require(_underlyingCost > 0, "underlying cost must be greater than 0");
 		require(_prepareWithdrawal(_cost), "not available at the moment");
 		_underlyingCost = G.min(_underlyingCost, GA.getLendAmount(reserveToken));
