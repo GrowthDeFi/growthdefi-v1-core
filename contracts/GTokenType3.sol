@@ -224,8 +224,18 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		_transferVotes(_oldCandidate, _newCandidate, _votes);
 	}
 
+	uint256 constant VOTING_ROUND_INTERVAL = 30 minutes;
+
 	mapping (address => address) public candidate;
-	mapping (address => uint256) public votes;
+
+	mapping (address => uint256) private votingRound;
+	mapping (address => uint256[2]) private voting;
+
+	function votes(address _candidate) public view returns (uint256 _votes)
+	{
+		uint256 _votingRound = block.timestamp.div(VOTING_ROUND_INTERVAL);
+		return voting[_candidate][votingRound[_candidate] < _votingRound ? 0 : 1];
+	}
 
 	function setCandidate(address _newCandidate) public nonReentrant
 	{
@@ -242,17 +252,27 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		if (_votes == 0) return;
 		if (_oldCandidate == _newCandidate) return;
 		if (_oldCandidate != address(0)) {
-			uint256 _oldVotes = votes[_oldCandidate];
+			uint256 _oldVotes = voting[_oldCandidate][0];
 			uint256 _newVotes = _oldVotes.sub(_votes);
-			votes[_oldCandidate] = _newVotes;
+			_updateVotes(_oldCandidate, _newVotes);
 			emit ChangeVotes(_oldCandidate, _oldVotes, _newVotes);
 		}
 		if (_newCandidate != address(0)) {
-			uint256 _oldVotes = votes[_newCandidate];
+			uint256 _oldVotes = voting[_newCandidate][0];
 			uint256 _newVotes = _oldVotes.add(_votes);
-			votes[_newCandidate] = _newVotes;
+			_updateVotes(_newCandidate, _newVotes);
 			emit ChangeVotes(_newCandidate, _oldVotes, _newVotes);
 		}
+	}
+
+	function _updateVotes(address _candidate, uint256 _votes) internal
+	{
+		uint256 _votingRound = block.timestamp.div(VOTING_ROUND_INTERVAL);
+		if (votingRound[_candidate] < _votingRound) {
+			votingRound[_candidate] = _votingRound;
+			voting[_candidate][1] = voting[_candidate][0];
+		}
+		voting[_candidate][0] = _votes;
 	}
 
 	event ChangeCandidate(address indexed _voter, address indexed _oldCandidate, address indexed _newCandidate);
