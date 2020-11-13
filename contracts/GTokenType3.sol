@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.6.0;
 
+import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
@@ -17,6 +18,8 @@ import { G } from "./G.sol";
  */
 abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 {
+	using SafeMath for uint256;
+
 	uint256 constant DEPOSIT_FEE = 10e16; // 10%
 	uint256 constant WITHDRAWAL_FEE = 10e16; // 10%
 
@@ -210,4 +213,48 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 	function initiateLiquidityPoolMigration(address /* _migrationRecipient */) public override { }
 	function cancelLiquidityPoolMigration() public override { }
 	function completeLiquidityPoolMigration() public override { }
+
+	// voting
+	function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal override
+	{
+		require(_from == address(0) || _to == address(0), "transfer prohibited");
+		address _oldCandidate = candidate[_from];
+		address _newCandidate = candidate[_to];
+		uint256 _votes = _amount;
+		_transferVotes(_oldCandidate, _newCandidate, _votes);
+	}
+
+	mapping (address => address) public candidate;
+	mapping (address => uint256) public votes;
+
+	function setCandidate(address _newCandidate) public nonReentrant
+	{
+		address _voter = msg.sender;
+		uint256 _votes = balanceOf(_voter);
+		address _oldCandidate = candidate[_voter];
+		candidate[_voter] = _newCandidate;
+		_transferVotes(_oldCandidate, _newCandidate, _votes);
+		emit ChangeCandidate(_voter, _oldCandidate, _newCandidate);
+	}
+
+	function _transferVotes(address _oldCandidate, address _newCandidate, uint256 _votes) internal
+	{
+		if (_votes == 0) return;
+		if (_oldCandidate == _newCandidate) return;
+		if (_oldCandidate != address(0)) {
+			uint256 _oldVotes = votes[_oldCandidate];
+			uint256 _newVotes = _oldVotes.sub(_votes);
+			votes[_oldCandidate] = _newVotes;
+			emit ChangeVotes(_oldCandidate, _oldVotes, _newVotes);
+		}
+		if (_newCandidate != address(0)) {
+			uint256 _oldVotes = votes[_newCandidate];
+			uint256 _newVotes = _oldVotes.add(_votes);
+			votes[_newCandidate] = _newVotes;
+			emit ChangeVotes(_newCandidate, _oldVotes, _newVotes);
+		}
+	}
+
+	event ChangeCandidate(address indexed _voter, address indexed _oldCandidate, address indexed _newCandidate);
+	event ChangeVotes(address indexed _candidate, uint256 _oldVotes, uint256 _newVotes);
 }
