@@ -14,6 +14,7 @@ library GPortfolioReserveManager
 	using GPortfolioReserveManager for GPortfolioReserveManager.Self;
 
 	uint256 constant DEFAULT_REBALANCE_MARGIN = 1e16; // 1%
+	uint256 constant MAXIMUM_TOKEN_COUNT = 5;
 
 	struct Self {
 		address reserveToken;
@@ -47,6 +48,7 @@ library GPortfolioReserveManager
 
 	function insertToken(Self storage _self, address _token) public
 	{
+		require(_self.tokens.length() < MAXIMUM_TOKEN_COUNT, "Limit reached");
 		address _underlyingToken = GCToken(_token).underlyingToken();
 		require(_underlyingToken == _self.reserveToken, "Mismatched token");
 		require(_self.tokens.add(_token), "Duplicate token");
