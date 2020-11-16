@@ -26,7 +26,7 @@
     "deploy:rinkeby": "truffle migrate --network rinkeby",
     "deploy:kovan": "truffle migrate --network kovan",
     "deploy:goerli": "truffle migrate --network goerli",
-    "source": "truffle-flattener contracts/*.sol | sed '/^.*SPDX-License-Identifier:.*$/d' | sed '/^pragma experimental ABIEncoderV2;$/d' | sed '1s/^/\\/\\/ SPDX-License-Identifier: GPL-3.0-only AND MIT\\npragma experimental ABIEncoderV2;\\n\\n/' > GrowthDeFi.sol",
+    "source": "truffle-flattener contracts/GTokens.sol | sed '/^.*SPDX-License-Identifier:.*$/d' | sed '/^pragma experimental ABIEncoderV2;$/d' | sed '1s/^/\\/\\/ SPDX-License-Identifier: GPL-3.0-only\\npragma experimental ABIEncoderV2;\\n\\n/' > GrowthDeFi.sol",
     "test": "truffle test",
     "stress-test": "npm run deploy && node stress-test/index.js"
   },
