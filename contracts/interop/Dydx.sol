@@ -2,6 +2,9 @@
 pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
+/**
+ * @dev Minimal set of declarations for Dydx interoperability.
+ */
 interface SoloMargin
 {
 	function getMarketTokenAddress(uint256 _marketId) external view returns (address _token);

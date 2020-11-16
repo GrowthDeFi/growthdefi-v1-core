@@ -3,6 +3,13 @@ pragma solidity ^0.6.0;
 
 import { AaveLendingMarketAbstraction } from "./modules/AaveLendingMarketAbstraction.sol";
 
+/**
+ * @dev This public library provides a single entrypoint to the Aave lending
+ *      market internal library available in the modules folder. It is a
+ *      complement to the G.sol library. Both libraries exists to circunvent the
+ *      contract size limitation imposed by the EVM. See G.sol for further
+ *      documentation.
+ */
 library GA
 {
 	function getUnderlyingToken(address _atoken) public view returns (address _token) { return AaveLendingMarketAbstraction._getUnderlyingToken(_atoken); }

@@ -3,6 +3,9 @@ pragma solidity ^0.6.0;
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/**
+ * @dev Minimal set of declarations for Compound interoperability.
+ */
 interface Comptroller
 {
 	function oracle() external view returns (address _oracle);

@@ -3,6 +3,13 @@ pragma solidity ^0.6.0;
 
 import { CompoundLendingMarketAbstraction } from "./modules/CompoundLendingMarketAbstraction.sol";
 
+/**
+ * @dev This public library provides a single entrypoint to the Compound lending
+ *      market internal library available in the modules folder. It is a
+ *      complement to the G.sol library. Both libraries exists to circunvent the
+ *      contract size limitation imposed by the EVM. See G.sol for further
+ *      documentation.
+ */
 library GC
 {
 	function getUnderlyingToken(address _ctoken) public view returns (address _token) { return CompoundLendingMarketAbstraction._getUnderlyingToken(_ctoken); }

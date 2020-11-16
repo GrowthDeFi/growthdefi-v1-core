@@ -219,7 +219,7 @@ contract GCTokenType1 is GCTokenBase, GFlashBorrower
 	 *      collateralization/leverage to reflect the new increased reserve
 	 *      balance. This method uses the GCLeveragedReserveManager to
 	 *      adjust the reserve and this is done via flash loans.
-	 *      See GCLeveragedReserveManager().
+	 *      See GCLeveragedReserveManager.sol.
 	 * @param _cost The amount of reserve being deposited (ignored).
 	 * @return _success A boolean indicating whether or not the operation
 	 *                  succeeded. This operation should not fail unless
@@ -238,7 +238,7 @@ contract GCTokenType1 is GCTokenBase, GFlashBorrower
 	 *      the amount will be left in the reserve, in terms of cToken cost,
 	 *      and adjusts the collateralization/leverage accordingly. This
 	 *      method uses the GCLeveragedReserveManager to adjust the reserve
-	 *      and this is done via flash loans. See GCLeveragedReserveManager().
+	 *      and this is done via flash loans. See GCLeveragedReserveManager.sol.
 	 * @param _cost The amount of reserve being withdrawn and that needs to
 	 *              be immediately liquid.
 	 * @return _success A boolean indicating whether or not the operation succeeded.
