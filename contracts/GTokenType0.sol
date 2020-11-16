@@ -116,7 +116,7 @@ contract GTokenType0 is GTokenBase
 	 *         have the reserve token as its underlying token. The initial
 	 *         portfolio share of the new token will be 0%.
 	 * @param _token The contract address of the new gToken to be incorporated
-	 *                into the portfolio.
+	 *               into the portfolio.
 	 */
 	function insertToken(address _token) public onlyOwner nonReentrant
 	{
@@ -128,7 +128,7 @@ contract GTokenType0 is GTokenBase
 	 *         reserve balance of the token must be 0% before it can be
 	 *         removed.
 	 * @param _token The contract address of the gToken to be removed from
-	 *                the portfolio.
+	 *               the portfolio.
 	 */
 	function removeToken(address _token) public onlyOwner nonReentrant
 	{
@@ -153,7 +153,7 @@ contract GTokenType0 is GTokenBase
 	 * @notice Sets the percentual margin tolerable before triggering a
 	 *         rebalance action (i.e. an underlying deposit or withdrawal).
 	 * @param _rebalanceMargin The percentual rebalance margin, to be
-	 *                          configured by the owner.
+	 *                         configured by the owner.
 	 */
 	function setRebalanceMargin(uint256 _rebalanceMargin) public onlyOwner nonReentrant
 	{

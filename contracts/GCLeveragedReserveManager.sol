@@ -9,8 +9,8 @@ import { GC } from "./GC.sol";
 /**
  * @dev This library implements data structure abstraction for the leveraged
  *      reserve management code in order to circuvent the EVM contract size limit.
- *      It is therefore a public library shared by all gToken Type 1 contracts and
- *      needs to be published alongside them. See GTokenType1.sol for further
+ *      It is therefore a public library shared by all gcToken Type 1 contracts and
+ *      needs to be published alongside them. See GCTokenType1.sol for further
  *      documentation.
  */
 library GCLeveragedReserveManager
