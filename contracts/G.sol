@@ -10,12 +10,12 @@ import { FlashLoans } from "./modules/FlashLoans.sol";
 import { BalancerLiquidityPoolAbstraction } from "./modules/BalancerLiquidityPoolAbstraction.sol";
 
 /**
- * @dev This public library provides a single entrypoint to all the relevant
+ * @dev This public library provides a single entrypoint to most of the relevant
  *      internal libraries available in the modules folder. It exists to
  *      circunvent the contract size limitation imposed by the EVM. All function
  *      calls are directly delegated to the target library function preserving
- *      argument and return values exactly as they are. Thit library is shared
- *      by all contracts and even other public libraries from this repository,
+ *      argument and return values exactly as they are. This library is shared
+ *      by many contracts and even other public libraries from this repository,
  *      therefore it needs to be published alongside them.
  */
 library G
