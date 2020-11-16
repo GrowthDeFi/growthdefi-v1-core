@@ -286,10 +286,11 @@ async function main(args) {
   await sendMessage('<i>Monitoring initiated</i>');
 
   let interrupted = false;
-  interrupt(async () => {
+  interrupt(async (e) => {
     if (!interrupted) {
       interrupted = true;
-      await sendMessage('<i>Monitoring interrupted</i>');
+      const message = e instanceof Error ? e.message : String(message);
+      await sendMessage('<i>Monitoring interrupted (' + message + ')</i>');
       exit();
     }
   });
