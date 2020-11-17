@@ -226,7 +226,7 @@ library GPortfolioReserveManager
 		uint256 _tokenCount = _self.tokens.length();
 		for (uint256 _index = 0; _index < _tokenCount; _index++) {
 			address _token = _self.tokens.at(_index);
-			uint256 _tokenReserve = GCToken(_token).totalReserveUnderlying();
+			uint256 _tokenReserve = _self._getUnderlyingReserve(_token);
 			_totalReserve = _totalReserve.add(_tokenReserve);
 		}
 		return _totalReserve;
@@ -282,7 +282,7 @@ library GPortfolioReserveManager
 		uint256 _tokenCount = _self.tokens.length();
 		for (uint256 _index = 0; _index < _tokenCount; _index++) {
 			address _token = _self.tokens.at(_index);
-			uint256 _tokenReserve = GCToken(_token).totalReserveUnderlying();
+			uint256 _tokenReserve = _self._getUnderlyingReserve(_token);
 			if (_tokenReserve < _requiredAmount) continue;
 
 			uint256 _oldTokenReserve = _tokenReserve.sub(_requiredAmount);
@@ -322,7 +322,7 @@ library GPortfolioReserveManager
 		for (uint256 _index = 0; _index < _tokenCount; _index++) {
 			address _token = _self.tokens.at(_index);
 
-			uint256 _oldTokenReserve = GCToken(_token).totalReserveUnderlying();
+			uint256 _oldTokenReserve = _self._getUnderlyingReserve(_token);
 			uint256 _oldTokenPercent = _oldTokenReserve.mul(1e18).div(_reserveAmount);
 			uint256 _newTokenPercent = _self.percents[_token];
 
@@ -360,7 +360,7 @@ library GPortfolioReserveManager
 		for (uint256 _index = 0; _index < _tokenCount; _index++) {
 			address _token = _self.tokens.at(_index);
 
-			uint256 _oldTokenReserve = GCToken(_token).totalReserveUnderlying();
+			uint256 _oldTokenReserve = _self._getUnderlyingReserve(_token);
 			uint256 _oldTokenPercent = _oldTokenReserve.mul(1e18).div(_reserveAmount);
 			uint256 _newTokenPercent = _self.percents[_token];
 
@@ -415,6 +415,36 @@ library GPortfolioReserveManager
 		} catch (bytes memory /* _data */) {
 			return false;
 		}
+	}
+
+	/**
+	 * @dev Calculates how much of the reserve token is available for
+	 *      withdrawal by the current contract for the given gToken.
+	 * @param _token The gToken to withdraw from.
+	 * @return _underlyingCost The total amount redeemable by the current
+	 *                         contract from the given gToken.
+	 */
+	function _getUnderlyingReserve(Self storage _self, address _token) internal view returns (uint256 _underlyingCost)
+	{
+		uint256 _grossShares = G.getBalance(_token);
+		return _self._calcWithdrawalUnderlyingCostFromShares(_token, _grossShares);
+	}
+
+	/**
+	 * @dev Calculates how much will be received for withdrawing the provided
+	 *      number of shares from a given gToken.
+	 * @param _token The gToken to withdraw from.
+	 * @param _grossShares The number of shares to be provided.
+	 * @return _underlyingCost The amount to be received.
+	 */
+	function _calcWithdrawalUnderlyingCostFromShares(Self storage /* _self */, address _token, uint256 _grossShares) internal view returns (uint256 _underlyingCost)
+	{
+		uint256 _totalReserve = GCToken(_token).totalReserve();
+		uint256 _totalSupply = GCToken(_token).totalSupply();
+		uint256 _withdrawalFee = GCToken(_token).withdrawalFee();
+		uint256 _exchangeRate = GCToken(_token).exchangeRate();
+		(_underlyingCost,) = GCToken(_token).calcWithdrawalUnderlyingCostFromShares(_grossShares, _totalReserve, _totalSupply, _withdrawalFee, _exchangeRate);
+		return _underlyingCost;
 	}
 
 	/**
