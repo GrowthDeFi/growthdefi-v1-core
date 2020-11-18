@@ -92,17 +92,17 @@ library GPortfolioReserveManager
 	}
 
 	/**
-	 * @dev Removes a gToken from the portfolio. The portfolio share and
-	 *      reserve balance of the token must be 0% before it can be
-	 *      removed. This method is exposed publicly.
+	 * @dev Removes a gToken from the portfolio. The portfolio share of the
+	 *      token must be 0% before it can be removed. The underlying reserve
+	 *      is redeemed upon removal. This method is exposed publicly.
 	 * @param _token The contract address of the gToken to be removed from
 	 *               the portfolio.
 	 */
 	function removeToken(Self storage _self, address _token) public
 	{
 		require(_self.percents[_token] == 0, "Positive percent");
-		require(G.getBalance(_token) == 0, "Unbalanced reserve");
 		require(_self.tokens.remove(_token), "Unknown token");
+		_self._withdrawUnderlying(_token, _self._getUnderlyingReserve(_token));
 	}
 
 	/**
