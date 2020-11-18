@@ -20,14 +20,16 @@ library GPortfolioReserveManager
 	using EnumerableSet for EnumerableSet.AddressSet;
 	using GPortfolioReserveManager for GPortfolioReserveManager.Self;
 
-	uint256 constant DEFAULT_REBALANCE_MARGIN = 1e16; // 1%
+	uint256 constant DEFAULT_LIQUID_REBALANCE_MARGIN = 10e16; // 10%
+	uint256 constant DEFAULT_PORTFOLIO_REBALANCE_MARGIN = 1e16; // 1%
 	uint256 constant MAXIMUM_TOKEN_COUNT = 5;
 
 	struct Self {
 		address reserveToken;
 		EnumerableSet.AddressSet tokens;
 		mapping (address => uint256) percents;
-		uint256 rebalanceMargin;
+		uint256 liquidRebalanceMargin;
+		uint256 portfolioRebalanceMargin;
 	}
 
 	/**
@@ -38,7 +40,8 @@ library GPortfolioReserveManager
 	{
 		_self.reserveToken = _reserveToken;
 		_self.percents[_reserveToken] = 1e18;
-		_self.rebalanceMargin = DEFAULT_REBALANCE_MARGIN;
+		_self.liquidRebalanceMargin = DEFAULT_LIQUID_REBALANCE_MARGIN;
+		_self.portfolioRebalanceMargin = DEFAULT_PORTFOLIO_REBALANCE_MARGIN;
 	}
 
 	/**
@@ -125,16 +128,20 @@ library GPortfolioReserveManager
 	}
 
 	/**
-	 * @dev Sets the percentual margin tolerable before triggering a
+	 * @dev Sets the percentual margins tolerable before triggering a
 	 *      rebalance action (i.e. an underlying deposit or withdrawal).
 	 *      This method is exposed publicly.
-	 * @param _rebalanceMargin The percentual rebalance margin, to be
-	 *                         configured by the owner.
+	 * @param _liquidRebalanceMargin The liquid percentual rebalance margin,
+	 *                               to be configured by the owner.
+	 * @param _portfolioRebalanceMargin The portfolio percentual rebalance
+	 *                                  margin, to be configured by the owner.
 	 */
-	function setRebalanceMargin(Self storage _self, uint256 _rebalanceMargin) public
+	function setRebalanceMargins(Self storage _self, uint256 _liquidRebalanceMargin, uint256 _portfolioRebalanceMargin) public
 	{
-		require(0 <= _rebalanceMargin && _rebalanceMargin <= 1e18, "Invalid margin");
-		_self.rebalanceMargin = _rebalanceMargin;
+		require(0 <= _liquidRebalanceMargin && _liquidRebalanceMargin <= 1e18, "Invalid margin");
+		require(0 <= _portfolioRebalanceMargin && _portfolioRebalanceMargin <= 1e18, "Invalid margin");
+		_self.liquidRebalanceMargin = _liquidRebalanceMargin;
+		_self.portfolioRebalanceMargin = _portfolioRebalanceMargin;
 	}
 
 	/**
@@ -154,7 +161,7 @@ library GPortfolioReserveManager
 	 *      liquid pool and, if necessary, either withdrawal from an underlying
 	 *      gToken to get more liquidity, or deposit/withdrawal from an
 	 *      underlying gToken to move towards the desired reserve allocation
-	 *      if any of them falls beyond the rebalance margin threshold.
+	 *      if any of them falls beyond the rebalance margin thresholds.
 	 *      To save on gas costs the reserve adjusment will request at most
 	 *      one operation from any of the underlying gTokens. This method is
 	 *      exposed publicly.
@@ -251,13 +258,13 @@ library GPortfolioReserveManager
 		uint256 _tokenPercent = _self.percents[_self.reserveToken];
 		uint256 _tokenReserve = _reserveAmount.mul(_tokenPercent).div(1e18);
 		if (_liquidAmount > _tokenReserve) {
-			uint256 _upperPercent = G.min(1e18, _tokenPercent.add(_self.rebalanceMargin));
+			uint256 _upperPercent = G.min(1e18, _tokenPercent.add(_self.liquidRebalanceMargin));
 			uint256 _upperReserve = _reserveAmount.mul(_upperPercent).div(1e18);
 			if (_liquidAmount > _upperReserve) return (_liquidAmount.sub(_tokenReserve), 0);
 		}
 		else
 		if (_liquidAmount < _tokenReserve) {
-			uint256 _lowerPercent = _tokenPercent.sub(G.min(_tokenPercent, _self.rebalanceMargin));
+			uint256 _lowerPercent = _tokenPercent.sub(G.min(_tokenPercent, _self.liquidRebalanceMargin));
 			uint256 _lowerReserve = _reserveAmount.mul(_lowerPercent).div(1e18);
 			if (_liquidAmount < _lowerReserve) return (0, _tokenReserve.sub(_liquidAmount));
 		}
@@ -314,7 +321,7 @@ library GPortfolioReserveManager
 	 */
 	function _findDeposit(Self storage _self, uint256 _reserveAmount) internal view returns (address _adjustToken, uint256 _adjustAmount)
 	{
-		uint256 _maxPercent = _self.rebalanceMargin;
+		uint256 _maxPercent = _self.portfolioRebalanceMargin;
 		_adjustToken = address(0);
 		_adjustAmount = 0;
 
@@ -352,7 +359,7 @@ library GPortfolioReserveManager
 	 */
 	function _findWithdrawal(Self storage _self, uint256 _reserveAmount) internal view returns (address _adjustToken, uint256 _adjustAmount)
 	{
-		uint256 _maxPercent = _self.rebalanceMargin;
+		uint256 _maxPercent = _self.portfolioRebalanceMargin;
 		_adjustToken = address(0);
 		_adjustAmount = 0;
 
