@@ -12,7 +12,7 @@ import { GPortfolioReserveManager } from "./GPortfolioReserveManager.sol";
  *         in the reserve token itself, to save on gas fees. The contract owner
  *         can add and remove gTokens that compose the portfolio, as much as
  *         reconfigure their percentual shares. There is also a configurable
- *         rebalance margin that serves as threshold for when the contract will
+ *         rebalance margins that serves as threshold for when the contract will
  *         or not attempt to rebalance the reserve according to the set
  *         percentual ratios. The algorithm that maintains the proper
  *         distribution of the reserve token does so incrementally based on the
@@ -101,14 +101,16 @@ contract GTokenType0 is GTokenBase
 	}
 
 	/**
-	 * @notice Provides the percentual margin tolerable before triggering a
+	 * @notice Provides the percentual margins tolerable before triggering a
 	 *         rebalance action (i.e. an underlying deposit or withdrawal).
-	 * @return _rebalanceMargin The percentual rebalance margin, as
-	 *                          configured by the owner.
+	 * @return _liquidRebalanceMargin The liquid percentual rebalance margin,
+	 *                                as configured by the owner.
+	 * @return _portfolioRebalanceMargin The portfolio percentual rebalance
+	 *                                   margin, as configured by the owner.
 	 */
-	function getRebalanceMargin() public view returns (uint256 _rebalanceMargin)
+	function getRebalanceMargins() public view returns (uint256 _liquidRebalanceMargin, uint256 _portfolioRebalanceMargin)
 	{
-		return prm.rebalanceMargin;
+		return (prm.liquidRebalanceMargin, prm.portfolioRebalanceMargin);
 	}
 
 	/**
@@ -150,14 +152,16 @@ contract GTokenType0 is GTokenBase
 	}
 
 	/**
-	 * @notice Sets the percentual margin tolerable before triggering a
+	 * @notice Sets the percentual margins tolerable before triggering a
 	 *         rebalance action (i.e. an underlying deposit or withdrawal).
-	 * @param _rebalanceMargin The percentual rebalance margin, to be
-	 *                         configured by the owner.
+	 * @param _liquidRebalanceMargin The liquid percentual rebalance margin,
+	 *                               to be configured by the owner.
+	 * @param _portfolioRebalanceMargin The portfolio percentual rebalance
+	 *                                  margin, to be configured by the owner.
 	 */
-	function setRebalanceMargin(uint256 _rebalanceMargin) public onlyOwner nonReentrant
+	function setRebalanceMargins(uint256 _liquidRebalanceMargin, uint256 _portfolioRebalanceMargin) public onlyOwner nonReentrant
 	{
-		prm.setRebalanceMargin(_rebalanceMargin);
+		prm.setRebalanceMargins(_liquidRebalanceMargin, _portfolioRebalanceMargin);
 	}
 
 	/**
