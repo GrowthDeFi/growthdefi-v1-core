@@ -92,6 +92,7 @@ library GADelegatedReserveManager
 	function _gulpGrowthAssets(Self storage _self) internal returns (bool _success)
 	{
 		if (_self.exchange == address(0)) return true;
+		if (_self.growthMaxGulpAmount == 0) return true;
 		uint256 _borrowAmount = GA.fetchBorrowAmount(_self.borrowToken);
 		uint256 _totalShares = G.getBalance(_self.growthToken);
 		uint256 _redeemableAmount = _self._calcWithdrawalCostFromShares(_totalShares);
