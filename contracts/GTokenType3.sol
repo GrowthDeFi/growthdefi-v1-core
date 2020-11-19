@@ -160,8 +160,7 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		require(_netShares > 0, "shares must be greater than 0");
 		G.pullFunds(reserveToken, _from, _cost);
 		_mint(_from, _netShares);
-		(uint256 _feeCost,) = GFormulae._calcWithdrawalCostFromShares(_feeShares.div(2), totalReserve(), totalSupply(), 0);
-		_burnReserve(_feeCost);
+		_burnReserveFromShares(_feeShares.div(2));
 	}
 
 	/**
@@ -184,7 +183,20 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		_cost = G.min(_cost, G.getBalance(reserveToken));
 		G.pushFunds(reserveToken, _from, _cost);
 		_burn(_from, _grossShares);
-		(uint256 _feeCost,) = GFormulae._calcWithdrawalCostFromShares(_feeShares.div(2), totalReserve(), totalSupply(), 0);
+		_burnReserveFromShares(_feeShares.div(2));
+	}
+
+	/**
+	 * @dev Burns a given amount of shares worth of the reserve token.
+	 *      See burnReserve().
+	 * @param _grossShares The amount of shares for which the equivalent,
+	 *                     in the reserve token, will be burned.
+	 */
+	function _burnReserveFromShares(uint256 _grossShares) internal virtual
+	{
+		// we use the withdrawal formula to calculated how much is burned (withdrawn) from the contract
+		// since the fee is 0 using the deposit formula would yield the same amount
+		(uint256 _feeCost,) = GFormulae._calcWithdrawalCostFromShares(_grossShares, totalReserve(), totalSupply(), 0);
 		_burnReserve(_feeCost);
 	}
 
