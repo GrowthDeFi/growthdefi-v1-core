@@ -108,6 +108,7 @@ library GCDelegatedReserveManager
 	function _gulpMiningAssets(Self storage _self) internal returns (bool _success)
 	{
 		if (_self.exchange == address(0)) return true;
+		if (_self.miningMaxGulpAmount == 0) return true;
 		uint256 _miningAmount = G.getBalance(_self.miningToken);
 		if (_miningAmount == 0) return true;
 		if (_miningAmount < _self.miningMinGulpAmount) return true;
@@ -118,6 +119,7 @@ library GCDelegatedReserveManager
 	function _gulpGrowthAssets(Self storage _self) internal returns (bool _success)
 	{
 		if (_self.exchange == address(0)) return true;
+		if (_self.growthMaxGulpAmount == 0) return true;
 		uint256 _borrowAmount = GC.fetchBorrowAmount(_self.borrowToken);
 		uint256 _totalShares = G.getBalance(_self.growthToken);
 		uint256 _redeemableAmount = _self._calcWithdrawalCostFromShares(_totalShares);
