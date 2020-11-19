@@ -204,7 +204,6 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 		require(_prepareDeposit(_cost), "not available at the moment");
 		_mint(_from, _netShares);
 		_mint(address(this), _feeShares.div(2));
-		lpm.gulpPoolAssets();
 	}
 
 	/**
@@ -228,6 +227,5 @@ abstract contract GCTokenBase is GTokenBase, GCToken
 		G.pushFunds(underlyingToken, _from, _underlyingCost);
 		_burn(_from, _grossShares);
 		_mint(address(this), _feeShares.div(2));
-		lpm.gulpPoolAssets();
 	}
 }
