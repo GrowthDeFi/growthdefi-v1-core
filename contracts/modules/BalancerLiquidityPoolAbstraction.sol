@@ -34,6 +34,7 @@ library BalancerLiquidityPoolAbstraction
 
 	function _joinPool(address _pool, address _token, uint256 _maxAmount) internal returns (uint256 _amount)
 	{
+		if (_maxAmount == 0) return 0;
 		uint256 _balanceAmount = BPool(_pool).getBalance(_token);
 		if (_balanceAmount == 0) return 0;
 		uint256 _limitAmount = _balanceAmount.div(2);
