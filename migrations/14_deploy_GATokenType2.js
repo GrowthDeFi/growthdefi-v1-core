@@ -27,14 +27,14 @@ module.exports = async (deployer, network) => {
   } else {
     exchange = await GUniswapV2Exchange.deployed();
   }
-  const gatoken = await gDAI.deployed();
+  const dtoken = await gDAI.deployed();
   for (const name in tokens) {
     const GAToken = artifacts.require(name);
     deployer.link(G, GAToken);
     deployer.link(GA, GAToken);
     deployer.link(GLiquidityPoolManager, GAToken);
     deployer.link(GADelegatedReserveManager, GAToken);
-    await deployer.deploy(GAToken, gatoken.address);
+    await deployer.deploy(GAToken, dtoken.address);
     const token = await GAToken.deployed();
     if (!['ropsten', 'rinkeby', 'kovan', 'goerli'].includes(network)) {
       await token.setExchange(exchange.address);

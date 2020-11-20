@@ -25,14 +25,14 @@ module.exports = async (deployer, network) => {
   } else {
     exchange = await GUniswapV2Exchange.deployed();
   }
-  const gctoken = await gDAI.deployed();
+  const dtoken = await gDAI.deployed();
   for (const name in tokens) {
     const GCToken = artifacts.require(name);
     deployer.link(G, GCToken);
     deployer.link(GC, GCToken);
     deployer.link(GLiquidityPoolManager, GCToken);
     deployer.link(GCDelegatedReserveManager, GCToken);
-    await deployer.deploy(GCToken, gctoken.address);
+    await deployer.deploy(GCToken, dtoken.address);
     const token = await GCToken.deployed();
     if (!['rinkeby'].includes(network)) {
       await token.setExchange(exchange.address);
