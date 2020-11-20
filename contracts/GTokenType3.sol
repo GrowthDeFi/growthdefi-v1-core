@@ -6,6 +6,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import { GToken } from "./GToken.sol";
+import { GVoting } from "./GVoting.sol";
 import { GFormulae } from "./GFormulae.sol";
 import { G } from "./G.sol";
 
@@ -16,14 +17,20 @@ import { G } from "./G.sol";
  *         holders while the other half is burned along with the same proportion
  *         of the reserve. It is used in the implementation of stkGRO.
  */
-abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
+abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 {
 	using SafeMath for uint256;
 
 	uint256 constant DEPOSIT_FEE = 10e16; // 10%
 	uint256 constant WITHDRAWAL_FEE = 10e16; // 10%
 
+	uint256 constant VOTING_ROUND_INTERVAL = 1 days;
+
 	address public immutable override reserveToken;
+	mapping (address => address) public override candidate;
+
+	mapping (address => uint256) private votingRound;
+	mapping (address => uint256[2]) private voting;
 
 	/**
 	 * @dev Constructor for the gToken contract.
@@ -138,6 +145,12 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		return WITHDRAWAL_FEE;
 	}
 
+	function votes(address _candidate) public view override returns (uint256 _votes)
+	{
+		uint256 _votingRound = block.timestamp.div(VOTING_ROUND_INTERVAL);
+		return voting[_candidate][votingRound[_candidate] < _votingRound ? 0 : 1];
+	}
+
 	/**
 	 * @notice Performs the minting of gToken shares upon the deposit of the
 	 *         reserve token. The actual number of shares being minted can
@@ -184,6 +197,16 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		_burnReserveFromShares(_feeShares.div(2));
 	}
 
+	function setCandidate(address _newCandidate) public override nonReentrant
+	{
+		address _voter = msg.sender;
+		uint256 _votes = balanceOf(_voter);
+		address _oldCandidate = candidate[_voter];
+		candidate[_voter] = _newCandidate;
+		_transferVotes(_oldCandidate, _newCandidate, _votes);
+		emit ChangeCandidate(_voter, _oldCandidate, _newCandidate);
+	}
+
 	/**
 	 * @dev Burns a given amount of shares worth of the reserve token.
 	 *      See burnReserve().
@@ -209,7 +232,6 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		G.pushFunds(reserveToken, address(0), _reserveAmount);
 	}
 
-	// voting
 	function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal override
 	{
 		require(_from == address(0) || _to == address(0), "transfer prohibited");
@@ -217,29 +239,6 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		address _newCandidate = candidate[_to];
 		uint256 _votes = _amount;
 		_transferVotes(_oldCandidate, _newCandidate, _votes);
-	}
-
-	uint256 constant VOTING_ROUND_INTERVAL = 1 days;
-
-	mapping (address => address) public candidate;
-
-	mapping (address => uint256) private votingRound;
-	mapping (address => uint256[2]) private voting;
-
-	function votes(address _candidate) public view returns (uint256 _votes)
-	{
-		uint256 _votingRound = block.timestamp.div(VOTING_ROUND_INTERVAL);
-		return voting[_candidate][votingRound[_candidate] < _votingRound ? 0 : 1];
-	}
-
-	function setCandidate(address _newCandidate) public nonReentrant
-	{
-		address _voter = msg.sender;
-		uint256 _votes = balanceOf(_voter);
-		address _oldCandidate = candidate[_voter];
-		candidate[_voter] = _newCandidate;
-		_transferVotes(_oldCandidate, _newCandidate, _votes);
-		emit ChangeCandidate(_voter, _oldCandidate, _newCandidate);
 	}
 
 	function _transferVotes(address _oldCandidate, address _newCandidate, uint256 _votes) internal
@@ -269,7 +268,4 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		}
 		voting[_candidate][0] = _votes;
 	}
-
-	event ChangeCandidate(address indexed _voter, address indexed _oldCandidate, address indexed _newCandidate);
-	event ChangeVotes(address indexed _candidate, uint256 _oldVotes, uint256 _newVotes);
 }
