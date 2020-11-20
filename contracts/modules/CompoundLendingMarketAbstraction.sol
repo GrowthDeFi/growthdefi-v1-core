@@ -33,7 +33,7 @@ library CompoundLendingMarketAbstraction
 	/**
 	 * @dev Retrieves the maximum collateralization ratio for a given cToken.
 	 * @param _ctoken The Compound cToken address.
-	 * @return _collateralRatio The percentual ratio normalized to 1e18.
+	 * @return _collateralRatio The percentual ratio normalized to 1e18 (100%).
 	 */
 	function _getCollateralRatio(address _ctoken) internal view returns (uint256 _collateralRatio)
 	{

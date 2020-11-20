@@ -35,7 +35,7 @@ library AaveLendingMarketAbstraction
 	/**
 	 * @dev Retrieves the maximum collateralization ratio for a given aToken.
 	 * @param _atoken The Aave aToken address.
-	 * @return _collateralRatio The percentual ratio normalized to 1e18.
+	 * @return _collateralRatio The percentual ratio normalized to 1e18 (100%).
 	 */
 	function _getCollateralRatio(address _atoken) internal view returns (uint256 _collateralRatio)
 	{
