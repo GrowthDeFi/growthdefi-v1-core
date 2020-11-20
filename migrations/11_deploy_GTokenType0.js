@@ -14,12 +14,12 @@ const IERC20 = artifacts.require('IERC20');
 module.exports = async (deployer, network) => {
   const registry = await GTokenRegistry.deployed();
   for (const name of names) {
-    const gXXX = artifacts.require(name);
-    deployer.link(G, gXXX);
-    deployer.link(GLiquidityPoolManager, gXXX);
-    deployer.link(GPortfolioReserveManager, gXXX);
-    await deployer.deploy(gXXX);
-    const token = await gXXX.deployed();
+    const GToken = artifacts.require(name);
+    deployer.link(G, GToken);
+    deployer.link(GLiquidityPoolManager, GToken);
+    deployer.link(GPortfolioReserveManager, GToken);
+    await deployer.deploy(GToken);
+    const token = await GToken.deployed();
     if (!['ropsten', 'goerli'].includes(network)) {
       const value = `${1e18}`;
       const exchange = await GUniswapV2Exchange.deployed();

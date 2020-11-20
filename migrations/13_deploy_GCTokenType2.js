@@ -27,13 +27,13 @@ module.exports = async (deployer, network) => {
   }
   const gctoken = await gDAI.deployed();
   for (const name in tokens) {
-    const gcXXX = artifacts.require(name);
-    deployer.link(G, gcXXX);
-    deployer.link(GC, gcXXX);
-    deployer.link(GLiquidityPoolManager, gcXXX);
-    deployer.link(GCDelegatedReserveManager, gcXXX);
-    await deployer.deploy(gcXXX, gctoken.address);
-    const token = await gcXXX.deployed();
+    const GCToken = artifacts.require(name);
+    deployer.link(G, GCToken);
+    deployer.link(GC, GCToken);
+    deployer.link(GLiquidityPoolManager, GCToken);
+    deployer.link(GCDelegatedReserveManager, GCToken);
+    await deployer.deploy(GCToken, gctoken.address);
+    const token = await GCToken.deployed();
     if (!['rinkeby'].includes(network)) {
       await token.setExchange(exchange.address);
       await token.setMiningGulpRange(`${20e18}`, `${500e18}`);
@@ -56,8 +56,8 @@ module.exports = async (deployer, network) => {
     }
     await registry.registerNewToken(token.address, '0x0000000000000000000000000000000000000000');
     for (const [gname, percent] of tokens[name]) {
-      const gXXX = artifacts.require(gname);
-      const gtoken = await gXXX.deployed();
+      const GToken = artifacts.require(gname);
+      const gtoken = await GToken.deployed();
       const utoken = await IERC20.at(await token.underlyingToken());
       await gtoken.insertToken(token.address);
       await gtoken.transferTokenPercent(utoken.address, token.address, percent);
