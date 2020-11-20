@@ -12,7 +12,7 @@ import { $ } from "../network/$.sol";
 /**
  * @dev This library abstracts the Aave flash loan functionality. It has a
  *      standardized flash loan interface. See GFlashBorrower.sol,
- *      FlashLoans.sol, and DydxFlashLoanAbstraction.sol for further documentations.
+ *      FlashLoans.sol, and DydxFlashLoanAbstraction.sol for further documentation.
  */
 library AaveFlashLoanAbstraction
 {

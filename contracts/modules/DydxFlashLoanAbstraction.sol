@@ -14,7 +14,7 @@ import { $ } from "../network/$.sol";
 /**
  * @dev This library abstracts the Dydx flash loan functionality. It has a
  *      standardized flash loan interface. See GFlashBorrower.sol,
- *      FlashLoans.sol, and AaveFlashLoanAbstraction.sol for further documentations.
+ *      FlashLoans.sol, and AaveFlashLoanAbstraction.sol for further documentation.
  */
 library DydxFlashLoanAbstraction
 {
