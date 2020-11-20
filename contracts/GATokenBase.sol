@@ -5,6 +5,7 @@ import { GFormulae } from "./GFormulae.sol";
 import { GTokenBase } from "./GTokenBase.sol";
 import { GCToken } from "./GCToken.sol";
 import { GCFormulae } from "./GCFormulae.sol";
+import { GMining } from "./GMining.sol";
 import { G } from "./G.sol";
 import { GA } from "./GA.sol";
 
@@ -18,7 +19,7 @@ import { GA } from "./GA.sol";
  *         and redeeming of aTokens internally, allowing users to interact with
  *         the contract providing funds directly in their underlying asset.
  */
-abstract contract GATokenBase is GTokenBase, GCToken
+abstract contract GATokenBase is GTokenBase, GCToken, GMining
 {
 	address public immutable override miningToken; // unused
 	address public immutable override growthToken;

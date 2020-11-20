@@ -4,8 +4,8 @@ pragma solidity ^0.6.0;
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
- * @dev Complete top-level interface for gTokens, implemented by the
- *      GTokenBase contract. See GTokenBase.sol for further documentation.
+ * @dev Minimal interface for gTokens, implemented by the GTokenBase contract.
+ *      See GTokenBase.sol for further documentation.
  */
 interface GToken is IERC20
 {
