@@ -34,7 +34,8 @@ module.exports = async (deployer, network) => {
     deployer.link(GA, gaXXX);
     deployer.link(GLiquidityPoolManager, gaXXX);
     deployer.link(GADelegatedReserveManager, gaXXX);
-    const token = await deployer.deploy(gaXXX, gatoken.address);
+    await deployer.deploy(gaXXX, gatoken.address);
+    const token = await gaXXX.deployed();
     if (!['ropsten', 'rinkeby', 'kovan', 'goerli'].includes(network)) {
       await token.setExchange(exchange.address);
       await token.setGrowthGulpRange(`${10000e6}`, `${20000e6}`);

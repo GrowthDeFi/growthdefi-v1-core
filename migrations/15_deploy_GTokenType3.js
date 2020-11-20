@@ -10,7 +10,8 @@ module.exports = async (deployer, network) => {
   for (const name of names) {
     const gXXX = artifacts.require(name);
     deployer.link(G, gXXX);
-    const token = await deployer.deploy(gXXX);
+    await deployer.deploy(gXXX);
+    const token = await gXXX.deployed();
     await registry.registerNewToken(token.address, '0x0000000000000000000000000000000000000000');
   }
 };

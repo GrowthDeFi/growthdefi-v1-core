@@ -18,7 +18,8 @@ module.exports = async (deployer, network) => {
     deployer.link(G, gXXX);
     deployer.link(GLiquidityPoolManager, gXXX);
     deployer.link(GPortfolioReserveManager, gXXX);
-    const token = await deployer.deploy(gXXX);
+    await deployer.deploy(gXXX);
+    const token = await gXXX.deployed();
     if (!['ropsten', 'goerli'].includes(network)) {
       const value = `${1e18}`;
       const exchange = await GUniswapV2Exchange.deployed();

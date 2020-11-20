@@ -32,14 +32,12 @@ module.exports = async (deployer, network) => {
     deployer.link(GC, gcXXX);
     deployer.link(GLiquidityPoolManager, gcXXX);
     deployer.link(GCDelegatedReserveManager, gcXXX);
-    const token = await deployer.deploy(gcXXX, gctoken.address);
+    await deployer.deploy(gcXXX, gctoken.address);
+    const token = await gcXXX.deployed();
     if (!['rinkeby'].includes(network)) {
       await token.setExchange(exchange.address);
       await token.setMiningGulpRange(`${20e18}`, `${500e18}`);
       await token.setGrowthGulpRange(`${10000e6}`, `${20000e6}`);
-    }
-    if (!['mainnet', 'development', 'testing'].includes(network)) {
-      await token.setCollateralizationRatio('0', '0');
     }
     if (!['ropsten', 'goerli'].includes(network)) {
       const value = `${1e18}`;
