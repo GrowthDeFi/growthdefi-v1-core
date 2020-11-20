@@ -11,26 +11,46 @@ import { LendingPoolAddressesProvider, LendingPool, LendingPoolCore, AToken, APr
 
 import { $ } from "../network/$.sol";
 
+/**
+ * @dev This library abstracts the Aave lending market. It has a standardized
+ *      lending market interface. See CompoundLendingMarket.sol.
+ */
 library AaveLendingMarketAbstraction
 {
 	using SafeMath for uint256;
 
-	uint16 constant AAVE_REFERRAL_CODE = 0; // TODO update this referral code
+	uint16 constant AAVE_REFERRAL_CODE = 0; // referral program ignored
 
+	/**
+	 * @dev Retreives an underlying token given an aToken.
+	 * @param _atoken The Aave aToken address.
+	 * @return _token The underlying reserve token.
+	 */
 	function _getUnderlyingToken(address _atoken) internal view returns (address _token)
 	{
 		if (_atoken == $.aETH) return $.WETH;
 		return AToken(_atoken).underlyingAssetAddress();
 	}
 
-	function _getCollateralRatio(address _atoken) internal view returns (uint256 _collateralFactor)
+	/**
+	 * @dev Retrieves the maximum collateralization ratio for a given aToken.
+	 * @param _atoken The Aave aToken address.
+	 * @return _collateralRatio The percentual ratio normalized to 1e18.
+	 */
+	function _getCollateralRatio(address _atoken) internal view returns (uint256 _collateralRatio)
 	{
 		address _pool = $.Aave_AAVE_LENDING_POOL;
 		address _token = AToken(_atoken).underlyingAssetAddress();
-		(_collateralFactor,,,,,,,) = LendingPool(_pool).getReserveConfigurationData(_token);
-		return _collateralFactor.mul(1e16);
+		(_collateralRatio,,,,,,,) = LendingPool(_pool).getReserveConfigurationData(_token);
+		return _collateralRatio.mul(1e16);
 	}
 
+	/**
+	 * @dev Retrieves the current market liquidity for a given aToken.
+	 * @param _atoken The Aave aToken address.
+	 * @return _marketAmount The underlying reserve token available
+	 *                       market liquidity.
+	 */
 	function _getMarketAmount(address _atoken) internal view returns (uint256 _marketAmount)
 	{
 		address _core = $.Aave_AAVE_LENDING_POOL_CORE;
@@ -38,6 +58,13 @@ library AaveLendingMarketAbstraction
 		return LendingPoolCore(_core).getReserveAvailableLiquidity(_token);
 	}
 
+	/**
+	 * @dev Retrieves the current account liquidity in terms of an aToken
+	 *      underlying reserve.
+	 * @param _atoken The Aave aToken address.
+	 * @return _liquidityAmount The available account liquidity for the
+	 *                          underlying reserve token.
+	 */
 	function _getLiquidityAmount(address _atoken) internal view returns (uint256 _liquidityAmount)
 	{
 		address _pool = $.Aave_AAVE_LENDING_POOL;
@@ -63,6 +90,16 @@ library AaveLendingMarketAbstraction
 		}
 	}
 
+	/**
+	 * @dev Retrieves the calculated account liquidity in terms of an aToken
+	 *      underlying reserve. It also considers the current market liquidity.
+	 *      A safety margin can be provided to deflate the actual liquidity amount.
+	 * @param _atoken The Aave aToken address.
+	 * @param _marginAmount The safety room to be left in terms of the
+	 *                      underlying reserve token.
+	 * @return _availableAmount The safe available liquidity in terms of the
+	 *                          underlying reserve token.
+	 */
 	function _getAvailableAmount(address _atoken, uint256 _marginAmount) internal view returns (uint256 _availableAmount)
 	{
 		uint256 _liquidityAmount = _getLiquidityAmount(_atoken);
@@ -70,21 +107,50 @@ library AaveLendingMarketAbstraction
 		return Math._min(_liquidityAmount.sub(_marginAmount), _getMarketAmount(_atoken));
 	}
 
+	/**
+	 * @dev Retrieves the last read-only exchange rate between the aToken
+	 *      and its underlying reserve token.
+	 * @param _atoken The Aave aToken address.
+	 * @return _exchangeRate The exchange rate between the aToken and its
+	 *                       underlying reserve token.
+	 */
 	function _getExchangeRate(address _atoken) internal pure returns (uint256 _exchangeRate)
 	{
 		return _fetchExchangeRate(_atoken);
 	}
 
-	function _fetchExchangeRate(address /* _atoken */) internal pure returns (uint256 _exchangeRate)
+	/**
+	 * @dev Retrieves the last up-to-date exchange rate between the aToken
+	 *      and its underlying reserve token.
+	 * @param _atoken The Aave aToken address.
+	 * @return _exchangeRate The exchange rate between the aToken and its
+	 *                       underlying reserve token.
+	 */
+	function _fetchExchangeRate(address _atoken) internal pure returns (uint256 _exchangeRate)
 	{
+		_atoken; // silences warning
 		return 1e18;
 	}
 
+	/**
+	 * @dev Retrieves the last read-only value for the aToken lending
+	 *      balance in terms of its underlying reserve token.
+	 * @param _atoken The Aave aToken address.
+	 * @return _amount The lending balance in terms of the underlying
+	 *                 reserve token.
+	 */
 	function _getLendAmount(address _atoken) internal view returns (uint256 _amount)
 	{
 		return _fetchLendAmount(_atoken);
 	}
 
+	/**
+	 * @dev Retrieves the last up-to-date value for the aToken lending
+	 *      balance in terms of its underlying reserve token.
+	 * @param _atoken The Aave aToken address.
+	 * @return _amount The lending balance in terms of the underlying
+	 *                 reserve token.
+	 */
 	function _fetchLendAmount(address _atoken) internal view returns (uint256 _amount)
 	{
 		address _pool = $.Aave_AAVE_LENDING_POOL;
@@ -93,11 +159,25 @@ library AaveLendingMarketAbstraction
 		return _amount;
 	}
 
+	/**
+	 * @dev Retrieves the last read-only value for the aToken borrowing
+	 *      balance in terms of its underlying reserve token.
+	 * @param _atoken The Aave aToken address.
+	 * @return _amount The borrowing balance in terms of the underlying
+	 *                 reserve token.
+	 */
 	function _getBorrowAmount(address _atoken) internal view returns (uint256 _amount)
 	{
 		return _fetchBorrowAmount(_atoken);
 	}
 
+	/**
+	 * @dev Retrieves the last up-to-date value for the aToken borrowing
+	 *      balance in terms of its underlying reserve token.
+	 * @param _atoken The Aave aToken address.
+	 * @return _amount The borrowing balance in terms of the underlying
+	 *                 reserve token.
+	 */
 	function _fetchBorrowAmount(address _atoken) internal view returns (uint256 _amount)
 	{
 		address _pool = $.Aave_AAVE_LENDING_POOL;
@@ -106,11 +186,24 @@ library AaveLendingMarketAbstraction
 		return _netAmount.add(_feeAmount);
 	}
 
-	function _enter(address /* _atoken */) internal pure returns (bool _success)
+	/**
+	 * @dev Signals the usage of a given aToken underlying reserve as
+	 *      collateral for borrowing funds in the lending market.
+	 * @param _atoken The Aave aToken address.
+	 * @return _success A boolean indicating whether or not the operation suceeded.
+	 */
+	function _enter(address _atoken) internal pure returns (bool _success)
 	{
+		_atoken; // silences warnings
 		return true;
 	}
 
+	/**
+	 * @dev Lend funds to a given aToken's market.
+	 * @param _atoken The Aave aToken address.
+	 * @param _amount The amount of the underlying token to lend.
+	 * @return _success A boolean indicating whether or not the operation suceeded.
+	 */
 	function _lend(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
 		if (_amount == 0) return true;
@@ -136,6 +229,12 @@ library AaveLendingMarketAbstraction
 		}
 	}
 
+	/**
+	 * @dev Redeem funds lent to a given aToken's market.
+	 * @param _atoken The Aave aToken address.
+	 * @param _amount The amount of the underlying token to redeem.
+	 * @return _success A boolean indicating whether or not the operation suceeded.
+	 */
 	function _redeem(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
 		if (_amount == 0) return true;
@@ -155,6 +254,12 @@ library AaveLendingMarketAbstraction
 		}
 	}
 
+	/**
+	 * @dev Borrow funds from a given aToken's market.
+	 * @param _atoken The Aave aToken address.
+	 * @param _amount The amount of the underlying token to borrow.
+	 * @return _success A boolean indicating whether or not the operation suceeded.
+	 */
 	function _borrow(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
 		if (_amount == 0) return true;
@@ -176,6 +281,12 @@ library AaveLendingMarketAbstraction
 		}
 	}
 
+	/**
+	 * @dev Repays a loan taken from a given aToken's market.
+	 * @param _atoken The Aave aToken address.
+	 * @param _amount The amount of the underlying token to repay.
+	 * @return _success A boolean indicating whether or not the operation suceeded.
+	 */
 	function _repay(address _atoken, uint256 _amount) internal returns (bool _success)
 	{
 		if (_amount == 0) return true;
@@ -202,26 +313,56 @@ library AaveLendingMarketAbstraction
 		}
 	}
 
+	/**
+	 * @dev Signals the usage of a given aToken underlying reserve as
+	 *      collateral for borrowing funds in the lending market. This
+	 *      operation will revert if it does not succeed.
+	 * @param _atoken The Aave aToken address.
+	 */
 	function _safeEnter(address _atoken) internal pure
 	{
 		require(_enter(_atoken), "enter failed");
 	}
 
+	/**
+	 * @dev Lend funds to a given aToken's market. This
+	 *      operation will revert if it does not succeed.
+	 * @param _atoken The Aave aToken address.
+	 * @param _amount The amount of the underlying token to lend.
+	 */
 	function _safeLend(address _atoken, uint256 _amount) internal
 	{
 		require(_lend(_atoken, _amount), "lend failure");
 	}
 
+	/**
+	 * @dev Redeem funds lent to a given aToken's market. This
+	 *      operation will revert if it does not succeed.
+	 * @param _atoken The Aave aToken address.
+	 * @param _amount The amount of the underlying token to redeem.
+	 */
 	function _safeRedeem(address _atoken, uint256 _amount) internal
 	{
 		require(_redeem(_atoken, _amount), "redeem failure");
 	}
 
+	/**
+	 * @dev Borrow funds from a given aToken's market. This
+	 *      operation will revert if it does not succeed.
+	 * @param _atoken The Aave aToken address.
+	 * @param _amount The amount of the underlying token to borrow.
+	 */
 	function _safeBorrow(address _atoken, uint256 _amount) internal
 	{
 		require(_borrow(_atoken, _amount), "borrow failure");
 	}
 
+	/**
+	 * @dev Repays a loan taken from a given aToken's market. This
+	 *      operation will revert if it does not succeed.
+	 * @param _atoken The Aave aToken address.
+	 * @param _amount The amount of the underlying token to repay.
+	 */
 	function _safeRepay(address _atoken, uint256 _amount) internal
 	{
 		require(_repay(_atoken, _amount), "repay failure");

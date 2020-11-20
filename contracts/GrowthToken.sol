@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.6.0;
 
-/* The definitions of this file are provided for reference only.
- * The GRO token has been published independently.
+/**
+ * @dev The definitions of this file are provided for reference only.
+ *      The GRO token has been published independently.
  */
-
 interface ERC20Interface
 {
 	function totalSupply() external view returns (uint);
