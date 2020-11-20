@@ -295,6 +295,8 @@ async function main(args) {
     }
   });
 
+  await sleep(60 * 1000);
+
   const names = ['gcDAI', 'gcUSDC'];
 
   let gctokens = null;
@@ -319,7 +321,7 @@ async function main(args) {
       message = '<i>Monitoring failure (' + e.message + ')</i>';
     }
     await sendMessage(message);
-    await sleep(60*1000);
+    await sleep(60 * 1000);
   }
 }
 
