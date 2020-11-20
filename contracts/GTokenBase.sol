@@ -6,6 +6,7 @@ import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import { GToken } from "./GToken.sol";
+import { GPooler } from "./GPooler.sol";
 import { GFormulae } from "./GFormulae.sol";
 import { GLiquidityPoolManager } from "./GLiquidityPoolManager.sol";
 import { G } from "./G.sol";
@@ -34,7 +35,7 @@ import { G } from "./G.sol";
  *         started the fee for deposits becomes 2% and the fee for withdrawals
  *         becomes 0%, in order to incentivise others to follow the migration.
  */
-abstract contract GTokenBase is ERC20, Ownable, ReentrancyGuard, GToken
+abstract contract GTokenBase is ERC20, Ownable, ReentrancyGuard, GToken, GPooler
 {
 	using GLiquidityPoolManager for GLiquidityPoolManager.Self;
 

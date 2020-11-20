@@ -23,7 +23,6 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 	uint256 constant DEPOSIT_FEE = 10e16; // 10%
 	uint256 constant WITHDRAWAL_FEE = 10e16; // 10%
 
-	address public immutable override stakesToken; // unused
 	address public immutable override reserveToken;
 
 	/**
@@ -38,7 +37,6 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		ERC20(_name, _symbol) public
 	{
 		_setupDecimals(_decimals);
-		stakesToken = address(0);
 		reserveToken = _reserveToken;
 	}
 
@@ -210,21 +208,6 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 	{
 		G.pushFunds(reserveToken, address(0), _reserveAmount);
 	}
-
-	// irrelevant GToken LP-related view functions
-	function liquidityPool() public view override returns (address _liquidityPool) { return address(0); }
-	function liquidityPoolBurningRate() public view override returns (uint256 _burningRate) { return 0; }
-	function liquidityPoolLastBurningTime() public view override returns (uint256 _lastBurningTime) { return 0; }
-	function liquidityPoolMigrationRecipient() public view override returns (address _migrationRecipient) { return address(0); }
-	function liquidityPoolMigrationUnlockTime() public view override returns (uint256 _migrationUnlockTime) { return 0; }
-
-	// irrelevant GToken LP-related priviledged functions
-	function allocateLiquidityPool(uint256 /* _stakesAmount */, uint256 /* _sharesAmount */) public override { }
-	function setLiquidityPoolBurningRate(uint256 /* _burningRate */) public override { }
-	function burnLiquidityPoolPortion() public override { }
-	function initiateLiquidityPoolMigration(address /* _migrationRecipient */) public override { }
-	function cancelLiquidityPoolMigration() public override { }
-	function completeLiquidityPoolMigration() public override { }
 
 	// voting
 	function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal override
