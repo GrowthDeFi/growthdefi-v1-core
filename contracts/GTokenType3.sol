@@ -27,6 +27,7 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 	uint256 constant VOTING_ROUND_INTERVAL = 1 days;
 
 	address public immutable override reserveToken;
+
 	mapping (address => address) public override candidate;
 
 	mapping (address => uint256) private votingRound;
@@ -145,9 +146,22 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 		return WITHDRAWAL_FEE;
 	}
 
+	/**
+	 * @notice Provides the number of votes a given candidate has at the end
+	 *         of the previous voting interval. The interval is 24 hours
+	 *         and resets at 12AM UTC. See _transferVotes().
+	 * @param _candidate The candidate for which we want to know the number
+	 *                   of delegated votes.
+	 * @return _votes The candidate number of votes. It is the sum of the
+	 *                balances of the voters that have him as cadidate at
+	 *                the end of the previous voting interval.
+	 */
 	function votes(address _candidate) public view override returns (uint256 _votes)
 	{
 		uint256 _votingRound = block.timestamp.div(VOTING_ROUND_INTERVAL);
+		// if the candidate balance was last updated the current round
+		// uses the backup instead (position 1), otherwise uses the most
+		// up-to-date balance (position 0)
 		return voting[_candidate][votingRound[_candidate] < _votingRound ? 0 : 1];
 	}
 
@@ -197,6 +211,13 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 		_burnReserveFromShares(_feeShares.div(2));
 	}
 
+	/**
+	 * @notice Changes the voter's choice for candidate and vote delegation.
+	 *         It is only going to be reflected in the voting by the next
+	 *         interval. The interval is 24 hours and resets at 12AM UTC.
+	 *         This function will emit a ChangeCandidate event.
+	 * @param _newCandidate The new candidate chosen.
+	 */
 	function setCandidate(address _newCandidate) public override nonReentrant
 	{
 		address _voter = msg.sender;
@@ -232,6 +253,16 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 		G.pushFunds(reserveToken, address(0), _reserveAmount);
 	}
 
+	/**
+	 * @dev This hook is called whenever tokens are minted, burned and
+	 *      transferred. This contract forbids token transfers by design.
+	 *      Token minting and burning will be reflected in the additional
+	 *      votes being credited or debited to the chosen candidate.
+	 *      See _transferVotes().
+	 * @param _from The provider of funds. Address 0 for minting.
+	 * @param _to The receiver of funds. Address 0 for burning.
+	 * @param _amount The amount being transfered.
+	 */
 	function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal override
 	{
 		require(_from == address(0) || _to == address(0), "transfer prohibited");
@@ -241,31 +272,71 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 		_transferVotes(_oldCandidate, _newCandidate, _votes);
 	}
 
+	/**
+	 * @dev Implements the vote transfer logic. It will deduct the votes
+	 *      from one candidate and credit it to another candidate. If
+	 *      either of candidates is the 0 address, the the voter is either
+	 *      setting its initial candidate or abstaining himself from voting.
+	 *      The change is only reflected after the voting interval resets.
+	 *      We use a 2 element array to keep track of votes. The amount on
+	 *      position 0 is always the current vote count for the candidate.
+	 *      The amount on position 1 is a backup that reflect the vote count
+	 *      prior to the current round only if it has been updated for the
+	 *      current round. We also record the last voting round where the
+	 *      candidate balance was updated. If the last round is the current
+	 *      then we use the backup value on position 1, otherwise we use
+	 *      the most up to date value on position 0. This function will
+	 *      emit a ChangeVotes event upon candidate vote balance change.
+	 *      See _updateVotes().
+	 * @param _oldCandidate The candidate to deduct votes from.
+	 * @param _newCandidate The candidate to credit voter for.
+	 * @param _votes the number of votes being transfered.
+	 */
 	function _transferVotes(address _oldCandidate, address _newCandidate, uint256 _votes) internal
 	{
 		if (_votes == 0) return;
 		if (_oldCandidate == _newCandidate) return;
 		if (_oldCandidate != address(0)) {
+			// position 0 always has the most up-to-date balance
 			uint256 _oldVotes = voting[_oldCandidate][0];
 			uint256 _newVotes = _oldVotes.sub(_votes);
+			// updates position 0 backing up the previous amount
 			_updateVotes(_oldCandidate, _newVotes);
 			emit ChangeVotes(_oldCandidate, _oldVotes, _newVotes);
 		}
 		if (_newCandidate != address(0)) {
+			// position 0 always has the most up-to-date balance
 			uint256 _oldVotes = voting[_newCandidate][0];
 			uint256 _newVotes = _oldVotes.add(_votes);
+			// updates position 0 backing up the previous amount
 			_updateVotes(_newCandidate, _newVotes);
 			emit ChangeVotes(_newCandidate, _oldVotes, _newVotes);
 		}
 	}
 
+	/**
+	 * @dev Updates the candidate's current vote balance (position 0) and
+	 *      backs up the vote balance for the previous interval (position 1).
+	 *      The routine makes sure we do not overwrite and corrupt the
+	 *      backup if multiple vote updates happen within a single roung.
+	 *      See _transferVotes().
+	 * @param _candidate The candidate for which we are updating the votes.
+	 * @param _votes The candidate's new vote balance.
+	 */
 	function _updateVotes(address _candidate, uint256 _votes) internal
 	{
 		uint256 _votingRound = block.timestamp.div(VOTING_ROUND_INTERVAL);
+		// if the candidates voting round is not the current it means
+		// we are updating the voting balance for the first time in
+		// the current round, that is the only time we want to make a
+		// backup of the vote balance for the previous roung
 		if (votingRound[_candidate] < _votingRound) {
 			votingRound[_candidate] = _votingRound;
+			// position 1 is the backup if there are updates in
+			// the current round
 			voting[_candidate][1] = voting[_candidate][0];
 		}
+		// position 0 always hold the up-to-date vote balance
 		voting[_candidate][0] = _votes;
 	}
 }
