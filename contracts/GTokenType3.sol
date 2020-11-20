@@ -236,7 +236,7 @@ abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken
 		_transferVotes(_oldCandidate, _newCandidate, _votes);
 	}
 
-	uint256 constant VOTING_ROUND_INTERVAL = 30 minutes;
+	uint256 constant VOTING_ROUND_INTERVAL = 1 day;
 
 	mapping (address => address) public candidate;
 
