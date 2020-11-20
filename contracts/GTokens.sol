@@ -6,6 +6,7 @@ import { GTokenType0 } from "./GTokenType0.sol";
 import { GCTokenType1 } from "./GCTokenType1.sol";
 import { GCTokenType2 } from "./GCTokenType2.sol";
 import { GATokenType2 } from "./GATokenType2.sol";
+import { GTokenType3 } from "./GTokenType3.sol";
 
 import { $ } from "./network/$.sol";
 
@@ -415,6 +416,18 @@ contract gacYFI is GATokenType2
 {
 	constructor (address _growthToken)
 		GATokenType2("growth aYFI", "gacYFI", 18, $.GRO, $.aYFI, $.aDAI, _growthToken) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of stkGRO. As a gToken Type 3, it uses GRO as reserve and
+ * burns both reserve and supply with each operation.
+ */
+contract stkGRO is GTokenType3
+{
+	constructor ()
+		GTokenType3("staked GRO", "stkGRO", 18, $.GRO) public
 	{
 	}
 }
