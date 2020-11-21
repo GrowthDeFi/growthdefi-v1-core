@@ -160,6 +160,7 @@ hierarchy:
       * gacREN
       * gacSNX
       * gacYFI
+  * stkGRO
 
 Other gTokens based on other platforms (such as Aave, Curve, etc) will be added
 to the hierarchy in the future.
@@ -281,6 +282,14 @@ Relevant implementation files:
 * [GATokenBase.sol](contracts/GATokenBase.sol)
 * [GATokenType2.sol](contracts/GATokenType2.sol)
 * [GADelegatedReserveManager.sol](contracts/GADelegatedReserveManager.sol)
+
+### Basic gToken Type 3 functionality
+
+_Under construction_
+
+Relevant implementation files:
+
+* [GTokenType3.sol](contracts/GTokenType3.sol)
 
 ## Building, Deploying and Testing
 
