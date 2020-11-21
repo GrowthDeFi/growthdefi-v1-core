@@ -7,8 +7,19 @@ import { Router02 } from "../interop/UniswapV2.sol";
 
 import { $ } from "../network/$.sol";
 
+/**
+ * @dev This library abstracts the Sushiswap token conversion functionality.
+ */
 library SushiswapExchangeAbstraction
 {
+	/**
+	 * @dev Calculates how much output to be received from the given input
+	 *      when converting between two assets.
+	 * @param _from The input asset address.
+	 * @param _to The output asset address.
+	 * @param _inputAmount The input asset amount to be provided.
+	 * @return _outputAmount The output asset amount to be received.
+	 */
 	function _calcConversionOutputFromInput(address _from, address _to, uint256 _inputAmount) internal view returns (uint256 _outputAmount)
 	{
 		address _router = $.Sushiswap_ROUTER02;
@@ -17,6 +28,14 @@ library SushiswapExchangeAbstraction
 		return Router02(_router).getAmountsOut(_inputAmount, _path)[_path.length - 1];
 	}
 
+	/**
+	 * @dev Calculates how much input to be received the given the output
+	 *      when converting between two assets.
+	 * @param _from The input asset address.
+	 * @param _to The output asset address.
+	 * @param _outputAmount The output asset amount to be received.
+	 * @return _inputAmount The input asset amount to be provided.
+	 */
 	function _calcConversionInputFromOutput(address _from, address _to, uint256 _outputAmount) internal view returns (uint256 _inputAmount)
 	{
 		address _router = $.Sushiswap_ROUTER02;
@@ -25,6 +44,14 @@ library SushiswapExchangeAbstraction
 		return Router02(_router).getAmountsIn(_outputAmount, _path)[0];
 	}
 
+	/**
+	 * @dev Convert funds between two assets.
+	 * @param _from The input asset address.
+	 * @param _to The output asset address.
+	 * @param _inputAmount The input asset amount to be provided.
+	 * @param _minOutputAmount The output asset minimum amount to be received.
+	 * @return _outputAmount The output asset amount received.
+	 */
 	function _convertFunds(address _from, address _to, uint256 _inputAmount, uint256 _minOutputAmount) internal returns (uint256 _outputAmount)
 	{
 		address _router = $.Sushiswap_ROUTER02;
@@ -34,6 +61,15 @@ library SushiswapExchangeAbstraction
 		return Router02(_router).swapExactTokensForTokens(_inputAmount, _minOutputAmount, _path, address(this), uint256(-1))[_path.length - 1];
 	}
 
+	/**
+	 * @dev Builds a routing path for conversion using WETH as intermediate.
+	 *      Deals with the special case where WETH is also the input or the
+	 *      output asset.
+	 * @param _from The input asset address.
+	 * @param _WETH The Wrapped Ether address.
+	 * @param _to The output asset address.
+	 * @return _path The route to perform conversion.
+	 */
 	function _buildPath(address _from, address _WETH, address _to) internal pure returns (address[] memory _path)
 	{
 		if (_from == _WETH || _to == _WETH) {

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.6.0;
 
+/**
+ * @dev Truffle migrations contract used deployment coordination.
+ */
 contract Migrations
 {
 	address public owner;
