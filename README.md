@@ -139,6 +139,23 @@ platform. These tokens, so called gTokens, are organized in the following
 hierarchy:
 
 * gToken
+  * gToken (Type 0)
+    * gDAI
+    * gUSDC
+    * gUSDT
+    * gETH
+    * gWBTC
+    * gBAT
+    * gZRX
+    * gUNI
+    * gENJ
+    * gKNC
+    * gAAVE
+    * gLINK
+    * gMANA
+    * gREN
+    * gSNX
+    * gYFI
   * gcToken
     * gcToken (Type 1)
       * gcDAI
@@ -160,10 +177,10 @@ hierarchy:
       * gacREN
       * gacSNX
       * gacYFI
-  * stkGRO
+  * gToken (Type 3)
+    * stkGRO
 
-Other gTokens based on other platforms (such as Aave, Curve, etc) will be added
-to the hierarchy in the future.
+Other gTokens based on other platforms will be added to the hierarchy in the future.
 
 ### Basic gToken functionality
 
@@ -206,6 +223,40 @@ Relevant implementation files:
 * [GFormulae.sol](contracts/GFormulae.sol)
 * [GTokenBase.sol](contracts/GTokenBase.sol)
 * [GLiquidityPoolManager.sol](contracts/GLiquidityPoolManager.sol)
+
+### Basic gToken Type 0 functionality
+
+The gToken Type 0 family implements Portfolio Management Tokens (PMTs). These
+are tokens for which deposits and withdrawals of the reserve token is invested
+in a basket of related gTokens up to 5 different ones. The distribution is
+percental and part of it can be maintained in the reserve token itself to
+accomodate liquidity and save on gas for small and frequent operations. For
+every asset supported by the GrowthDeFi platform there is a gToken Type 0
+correspondent. The PMTs are the entry points to the platform.
+
+The default configuration for a gToken Type 0, as of this writting, is to
+allocate 90% of the reserve assets to its correspondent gcToken or gacTokens
+and leave 10% of the reserve liquid (for instance, the gDAI PMT is composed of
+10% liquid DAI and 90% gcDAI).
+
+In order to save on gas, a PMT operation will at most trigger one operation of
+any of the underlying gTokens. Therefore the move into the target distribution
+of assets according to the portfolio settings is incremental, as operations
+happen. The target percentual configuration can be changed anytime by the
+contract onwer, but it may take half a dozen large operations to get the reserve
+into the desired distribution.
+
+The strategy for choosing which gToken is chosen to perform the underlying
+operation is basically its percentual deviation from the configured target.
+Furthermore we provide margin parameters to avoid having to rebalance the
+portfolio at every given operation.
+
+Relevant implementation files:
+
+* [GToken.sol](contracts/GToken.sol)
+* [GFormulae.sol](contracts/GFormulae.sol)
+* [GTokenBase.sol](contracts/GTokenBase.sol)
+* [GPortfolioReserveManager.sol](contracts/GPortfolioReserveManager.sol)
 
 ### Basic gcToken Type 1 functionality
 
@@ -263,7 +314,19 @@ Relevant implementation files:
 
 ### Basic gcToken Type 2 functionality
 
-_Under construction_
+The gToken Type 2 family is tailored to non-stable coins. Funds deposited into
+a gcToken Type 2 contract are used to mint the associated Compound cToken and
+used as collateral to borrow DAI, which in turn is used to mint gDAI.
+
+As with gcTokens Type 1, we collect COMP from liquidity mining, convert it, and
+use it to mint more of the underlying cToken. Similarly, we monitor the profit
+on the gDAI minted and, when it reaches a minimum level, we redeem the profit
+from gDAI, convert it, and use it to mint more of the underlying cToken.
+
+As with gcToken Type 1, the actual reserve collateralization ratio used by the
+gcToken Type 2 contract can be provided by the contract owner and is relative
+to the maximal collateralization ratio allowed by Compound. In order to switch
+off leveraging one must set this collateralization ratio to 0%.
 
 Relevant implementation files:
 
@@ -275,7 +338,16 @@ Relevant implementation files:
 
 ### Basic gaToken Type 2 functionality
 
-_Under construction_
+In terms of functionality and structure, the gaToken Type 2 family is exactly
+identical to the gcToken Type 2 family with two noted exceptions: 1) We use
+Aave instead of Compound for the underlying lending market platform; 2) There
+is no liquidity mining.
+
+To summarize, deposits into a gaToken Type 2 contract are used to borrow DAI
+and mint gDAI. Withdrawals work the other way around, we redeem gDAI, repay
+the loan, and finally redeem the deposits tokens. There are parameters to set
+the target collateralization ratio and margins for loans, in order to optimize
+operations and decrease gas consumption.
 
 Relevant implementation files:
 
@@ -285,11 +357,37 @@ Relevant implementation files:
 
 ### Basic gToken Type 3 functionality
 
-_Under construction_
+The gTokens Type 3 implement the basic gToken interface for deposits/withdrawals
+and provides a balance/vote delegation mechanism that will serve as basis for
+the system governance.
+
+Differently from the other gTokens, gTokens Type 3 do not have a locked liquidity
+pool to collect fees. Instead the fees collected are immediately burn both in
+shares but also in terms of the underlying reserve asset. And the fees for
+gTokens Type 3 is set at the much higher rate of 10%. The final characteristic
+that differentiates them from other gTokens is that ERC-20 transfers are
+prohibted. These tokens can be minted and burned, but not moved around.
+
+As governace tokens, gTokens Type 3 provide a voting delegation mechanism. Each
+holder can appoint a candidate for vote delegation. Each candidate collects the
+balance of those who appointed him in votes. So the contract offers two
+additional functions: 1) a function for setting your candidate and delegating
+your balance in votes; 2) a function for reading the number of votes of a given
+candidate. Voting is organized in intervals of 24 hours, therefore candidate
+and vote changes in the current interval are only reflected on the next interval.
+With this additional functionality we can build a list of most voted candidates
+just by requiring that users suggest themselves to be part of the list and, if
+they indeed have the votes for that, they will be included on the list.
+
+The single token contract that belongs to the gTokens Type 3 class is stkGRO,
+which is a version of the GRO token tailored for governance.
 
 Relevant implementation files:
 
+* [GToken.sol](contracts/GToken.sol)
+* [GFormulae.sol](contracts/GFormulae.sol)
 * [GTokenType3.sol](contracts/GTokenType3.sol)
+* [GVoting.sol](contracts/GVoting.sol)
 
 ## Building, Deploying and Testing
 
@@ -304,10 +402,6 @@ Compiling the smart contracts:
 Deploying the smart contracts (locally):
 
     $ ./start-mainnet-fork.sh & npm run deploy
-
-Deploying the smart contracts to mainnet:
-
-    $ npm run deploy:mainnet
 
 Running the unit tests:
 
