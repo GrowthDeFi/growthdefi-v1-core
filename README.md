@@ -45,8 +45,8 @@ the following folder structure:
   libraries organized as modules each abstracting a specific functionality.
   These are compile-time libraries with internal functions, they do not serve
   the purpose of organizing the code into runtime (public) libraries. As
-  Solidity libraries usually work, the code is assumed to execute via delegate
-  calls in the context of the caller contract.
+  Solidity libraries usually work, the code is assumed to execute in the
+  context of the caller contract.
 * [/contracts/network/](contracts/network). In this folder we have a simple
   and helpful library to declare static properties such as the current network
   (mainnet, ropsten, etc), well-known useful contract addresses for each
