@@ -46,9 +46,7 @@ the following folder structure:
   These are compile-time libraries with internal functions, they do not serve
   the purpose of organizing the code into runtime (public) libraries. As
   Solidity libraries usually work, the code is assumed to execute via delegate
-  calls in the context of the caller contract. _Some of the provided functionaly
-  may not be currently used but is kept as part of the code base as it was
-  useful in the past and may be useful in the future._
+  calls in the context of the caller contract.
 * [/contracts/network/](contracts/network). In this folder we have a simple
   and helpful library to declare static properties such as the current network
   (mainnet, ropsten, etc), well-known useful contract addresses for each
@@ -70,6 +68,11 @@ presented below. Their actual functionality is described in the next section.
   contract specialized in token conversion; which allows for the replacement
   and customization of the conversion service provider used by gTokens at any
   given point in time.
+  Other interface files present in the project are [GPooler.sol](contracts/GPooler.sol),
+  [GMining.sol](contracts/GMining.sol), and [GVoting.sol](contracts/GVoting.sol),
+  which serve to support modular and public extensions of gTokens for managing a
+  liquidity pool, performing liquidity and profit mining, and implement a vote
+  mechanism for governance, respectivelly.
 * **Abstract contract files** that provide the basis implementation of shared
   functionality for their respective interface. These are basically
   [GTokenBase.sol](contracts/GTokenBase.sol) for gTokens,
@@ -88,7 +91,9 @@ presented below. Their actual functionality is described in the next section.
   gcTokens implemented in two flavors: Type 1 gcTokens
   [GCTokenType1.sol](contracts/GCTokenType1.sol), and Type 2 gcTokens
   [GCTokenType2.sol](contracts/GCTokenType2.sol); and the gaTokens Type 2
-  [GATokenType2.sol](contracts/GATokenType2.sol).
+  [GATokenType2.sol](contracts/GATokenType2.sol). A special gToken Type 3
+  [GATokenType3.sol](contracts/GATokenType3.sol) provides the foundation for
+  governance by implementing a 1-level delegation voting token.
 * **Component contracts as (public) libraries** that provide core functionality
   implementation. Besides properly encapsulating the functionality they also
   allow working around the contract size limitations of the EVM.
@@ -111,10 +116,13 @@ presented below. Their actual functionality is described in the next section.
   (used by Type 2 gaTokens);
 * **A single entrypoint file** [GTokens.sol](contracts/GTokens.sol) that
   succinctly declares all the available gTokens.
-* **A public library** [G.sol](contracts/G.sol) that compiles and serves as
-  entrypoint to all the relevant functions available under the
-  [/modules/](contracts/modules) folder. This library exists mostly to work
-  around the EVM limitation of contract sizes, but it also provide a concise
+* **A set of public libraries** to abstract the available modules.
+  The [G.sol](contracts/G.sol) library that compiles and serves as
+  entrypoint to most the relevant functions available under the
+  [/modules/](contracts/modules) folder. The [GC.sol](contracts/GC.sol) and
+  [GA.sol](contracts/GA.sol), similarly, do the same for the Compound and Aave
+  lending market abstractions, respectively. These libraries exists mostly to
+  work around the EVM limitation of contract sizes, but it also provide a concise
   standardized and neat reference to library code.
 * **Two handy pure calculation libraries** that hoist gToken and gcToken
   minting/burning formulas, [GFormulae](contracts/GFormulae.sol) and
@@ -129,6 +137,12 @@ presented below. Their actual functionality is described in the next section.
   such as [GUniswapV2Exchange.sol](contracts/GUniswapV2Exchange.sol),
   [GSushiswapExchange.sol](contracts/GSushiswapExchange.sol). _Possibly more
   providers or more sophisticated routing maybe be added on the future._
+* **A ETH bridge contract** [GEtherBridge.sol](contracts/GEtherBridge.sol)
+  to facilitate the integration with the Ethereum native asset. This is handy
+  as gTokens are designed to work with ERC-20 tokens and uses WETH.
+* **A token registry contract** [GTokenRegistry.sol](contracts/GTokenRegistry.sol)
+  to facilitate the registration and automatic integration of new gTokens
+  via [thegraph.com](https://thegraph.com/).
 * **The reference implementation of the GRO token** is available on
   [GrowthToken.sol](contracts/GrowthToken.sol).
 

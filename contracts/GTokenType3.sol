@@ -17,7 +17,7 @@ import { G } from "./G.sol";
  *         holders while the other half is burned along with the same proportion
  *         of the reserve. It is used in the implementation of stkGRO.
  */
-abstract contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
+contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 {
 	using SafeMath for uint256;
 
