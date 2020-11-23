@@ -53,7 +53,7 @@ the following folder structure:
   supported network, as well as some global definitions that are handy for
   debugging during development.
 
-The [/contracts/](contracts) folder contains basically 10 groups of files as
+The [/contracts/](contracts) folder contains basically 12 groups of files as
 presented below. Their actual functionality is described in the next section.
 
 * **Interface files**, such as [GToken.sol](contracts/GToken.sol),
@@ -194,7 +194,9 @@ hierarchy:
   * gToken (Type 3)
     * stkGRO
 
-Other gTokens based on other platforms will be added to the hierarchy in the future.
+As one may deduct, gTokens are typically named after their reserve token.
+
+_gTokens based on other platforms will be added to the hierarchy in the future._
 
 ### Basic gToken functionality
 
@@ -243,7 +245,7 @@ Relevant implementation files:
 The gToken Type 0 family implements Portfolio Management Tokens (PMTs). These
 are tokens for which deposits and withdrawals of the reserve token is invested
 in a basket of related gTokens up to 5 different ones. The distribution is
-percental and part of it can be maintained in the reserve token itself to
+percentual and part of it can be maintained in the reserve token itself to
 accomodate liquidity and save on gas for small and frequent operations. For
 every asset supported by the GrowthDeFi platform there is a gToken Type 0
 correspondent. The PMTs are the entry points to the platform.
@@ -357,11 +359,12 @@ identical to the gcToken Type 2 family with two noted exceptions: 1) We use
 Aave instead of Compound for the underlying lending market platform; 2) There
 is no liquidity mining.
 
-To summarize, deposits into a gaToken Type 2 contract are used to borrow DAI
-and mint gDAI. Withdrawals work the other way around, we redeem gDAI, repay
-the loan, and finally redeem the deposits tokens. There are parameters to set
-the target collateralization ratio and margins for loans, in order to optimize
-operations and decrease gas consumption.
+To summarize, deposits into a gaToken Type 2 contract are used to mint the
+associated aToken and used as collateral to borrow DAI and mint gDAI.
+Withdrawals work the other way around, we redeem gDAI, repay the loan, and
+finally redeem the deposits aTokens. There are parameters to set the target
+collateralization ratio and margins for loans, in order to optimize operations
+and decrease gas consumption.
 
 Relevant implementation files:
 
@@ -376,22 +379,23 @@ and provides a balance/vote delegation mechanism that will serve as basis for
 the system governance.
 
 Differently from the other gTokens, gTokens Type 3 do not have a locked liquidity
-pool to collect fees. Instead the fees collected are immediately burn both in
-shares but also in terms of the underlying reserve asset. And the fees for
-gTokens Type 3 is set at the much higher rate of 10%. The final characteristic
-that differentiates them from other gTokens is that ERC-20 transfers are
-prohibted. These tokens can be minted and burned, but not moved around.
+pool to collect fees. Instead the fees collected are immediately burned. The fee
+gets burned not only in shares, but also in terms of the underlying reserve asset.
+And the fees for gTokens Type 3 are set at the much higher rate of 10%. The final
+characteristic that differentiates them from other gTokens is that ERC-20
+transfers are prohibted. These tokens can be minted and burned, but not moved around.
 
 As governace tokens, gTokens Type 3 provide a voting delegation mechanism. Each
 holder can appoint a candidate for vote delegation. Each candidate collects the
-balance of those who appointed him in votes. So the contract offers two
-additional functions: 1) a function for setting your candidate and delegating
-your balance in votes; 2) a function for reading the number of votes of a given
-candidate. Voting is organized in intervals of 24 hours, therefore candidate
-and vote changes in the current interval are only reflected on the next interval.
-With this additional functionality we can build a list of most voted candidates
-just by requiring that users suggest themselves to be part of the list and, if
-they indeed have the votes for that, they will be included on the list.
+reserve balance of those who appointed him in votes. So the contract offers two
+additional functions: 1) a function for setting your candidate and therefore
+delegating your balance in votes; 2) a function for reading the number of votes
+of a given candidate. Voting is organized in intervals of 24 hours, therefore
+candidate and vote changes in the current interval are only reflected on the
+next interval. With this additional functionality we can build a list of most
+voted candidates just by requiring that users suggest themselves to be part of
+the list and, if they indeed have the votes for that, they will be included on
+the list.
 
 The single token contract that belongs to the gTokens Type 3 class is stkGRO,
 which is a version of the GRO token tailored for governance.
