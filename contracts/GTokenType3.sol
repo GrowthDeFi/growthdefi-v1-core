@@ -239,6 +239,7 @@ contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 		// we use the withdrawal formula to calculated how much is burned (withdrawn) from the contract
 		// since the fee is 0 using the deposit formula would yield the same amount
 		(uint256 _cost,) = GFormulae._calcWithdrawalCostFromShares(_grossShares, totalReserve(), totalSupply(), 0);
+		_cost = G.min(_cost, G.getBalance(reserveToken));
 		_burnReserve(_cost);
 	}
 
