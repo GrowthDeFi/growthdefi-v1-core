@@ -183,6 +183,11 @@ library GPortfolioReserveManager
 		uint256 _blockedAmount = G.min(_roomAmount, _liquidAmount);
 		_liquidAmount = _liquidAmount.sub(_blockedAmount);
 
+		// calculates whether or not the liquid amount exceeds the
+		// configured range and requires either a deposit or a withdrawal
+		// to be performed
+		(uint256 _depositAmount, uint256 _withdrawalAmount) = _self._calcLiquidAdjustment(_reserveAmount, _liquidAmount);
+
 		// if the liquid amount is not enough to process a withdrawal
 		// we will need to withdraw the missing amount from one of the
 		// underlying gTokens (actually we will choose the one for which
@@ -190,15 +195,11 @@ library GPortfolioReserveManager
 		// percentual share deviation from its configured target)
 		uint256 _requiredAmount = _roomAmount.sub(_blockedAmount);
 		if (_requiredAmount > 0) {
-			(address _adjustToken, uint256 _adjustAmount) = _self._findRequiredWithdrawal(_reserveAmount, _requiredAmount);
+			_withdrawalAmount = _withdrawalAmount.add(_requiredAmount);
+			(address _adjustToken, uint256 _adjustAmount) = _self._findRequiredWithdrawal(_reserveAmount, _requiredAmount, _withdrawalAmount);
 			if (_adjustToken == address(0)) return false;
 			return _self._withdrawUnderlying(_adjustToken, _adjustAmount);
 		}
-
-		// calculates whether or not the liquid amount exceeds the
-		// configured range and requires either a deposit or a withdrawal
-		// to be performed
-		(uint256 _depositAmount, uint256 _withdrawalAmount) = _self._calcLiquidAdjustment(_reserveAmount, _liquidAmount);
 
 		// finds the gToken that will have benefited more of this deposit
 		// in terms of its target percentual share deviation and performs
@@ -276,11 +277,12 @@ library GPortfolioReserveManager
 	 *      liquidity and for which the withdrawal of the required amount
 	 *      will yield the least deviation from its target share.
 	 * @param _reserveAmount The total reserve amount used for calculation.
-	 * @param _requiredAmount The required liquidity amount used for calculation.
+	 * @param _minimumAmount The minimum liquidity amount used for calculation.
+	 * @param _targetAmount The target liquidity amount used for calculation.
 	 * @return _adjustToken The gToken to withdraw from.
 	 * @return _adjustAmount The amount to be withdrawn.
 	 */
-	function _findRequiredWithdrawal(Self storage _self, uint256 _reserveAmount, uint256 _requiredAmount) internal view returns (address _adjustToken, uint256 _adjustAmount)
+	function _findRequiredWithdrawal(Self storage _self, uint256 _reserveAmount, uint256 _minimumAmount, uint256 _targetAmount) internal view returns (address _adjustToken, uint256 _adjustAmount)
 	{
 		uint256 _minPercent = 1e18;
 		_adjustToken = address(0);
@@ -290,9 +292,10 @@ library GPortfolioReserveManager
 		for (uint256 _index = 0; _index < _tokenCount; _index++) {
 			address _token = _self.tokens.at(_index);
 			uint256 _tokenReserve = _self._getUnderlyingReserve(_token);
-			if (_tokenReserve < _requiredAmount) continue;
+			if (_tokenReserve < _minimumAmount) continue;
+			uint256 _maximumAmount = G.min(_tokenReserve, _targetAmount);
 
-			uint256 _oldTokenReserve = _tokenReserve.sub(_requiredAmount);
+			uint256 _oldTokenReserve = _tokenReserve.sub(_maximumAmount);
 			uint256 _oldTokenPercent = _oldTokenReserve.mul(1e18).div(_reserveAmount);
 			uint256 _newTokenPercent = _self.percents[_token];
 
@@ -301,10 +304,10 @@ library GPortfolioReserveManager
 			else
 			if (_newTokenPercent < _oldTokenPercent) _percent = _oldTokenPercent.sub(_newTokenPercent);
 
-			if (_percent < _minPercent) {
+			if (_maximumAmount > _adjustAmount || _maximumAmount == _adjustAmount && _percent < _minPercent) {
 				_minPercent = _percent;
 				_adjustToken = _token;
-				_adjustAmount = _requiredAmount;
+				_adjustAmount = _maximumAmount;
 			}
 		}
 
