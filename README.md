@@ -7,11 +7,17 @@ This repository contains the source code for the GrowthDeFi smart contracts
 
 ## Deployed Contracts
 
-| Token  | Mainnet Address                                                                                                       | Kovan Address                                                                                                               |
-| ------ | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| gcDAI  | [0x8c659d745eB24DF270A952F68F4B1d6817c3795C](https://etherscan.io/address/0x8c659d745eB24DF270A952F68F4B1d6817c3795C) | [0x7fFFd060f4f9ba6c0d281cfFb426036A9A6F89FA](https://kovan.etherscan.io/address/0x7fFFd060f4f9ba6c0d281cfFb426036A9A6F89FA) |
-| gcUSDC | [0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D](https://etherscan.io/address/0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D) | [0x151ac053B6EEEB604c957f2E1F69F797834DB39b](https://kovan.etherscan.io/address/0x151ac053B6EEEB604c957f2E1F69F797834DB39b) |
-| stkGRO | [0xD93f98b483CC2F9EFE512696DF8F5deCB73F9497](https://etherscan.io/address/0xD93f98b483CC2F9EFE512696DF8F5deCB73F9497) | [0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af](https://kovan.etherscan.io/address/0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af) |
+| Token  | Mainnet Address                                                                                                             |
+| ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| gcDAI  | [0x8c659d745eB24DF270A952F68F4B1d6817c3795C](https://etherscan.io/address/0x8c659d745eB24DF270A952F68F4B1d6817c3795C)       |
+| gcUSDC | [0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D](https://etherscan.io/address/0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D)       |
+| stkGRO | [0xD93f98b483CC2F9EFE512696DF8F5deCB73F9497](https://etherscan.io/address/0xD93f98b483CC2F9EFE512696DF8F5deCB73F9497)       |
+
+| Token  | Kovan Address                                                                                                               |
+| ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| gcDAI  | [0x7fFFd060f4f9ba6c0d281cfFb426036A9A6F89FA](https://kovan.etherscan.io/address/0x7fFFd060f4f9ba6c0d281cfFb426036A9A6F89FA) |
+| gcUSDC | [0x151ac053B6EEEB604c957f2E1F69F797834DB39b](https://kovan.etherscan.io/address/0x151ac053B6EEEB604c957f2E1F69F797834DB39b) |
+| stkGRO | [0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af](https://kovan.etherscan.io/address/0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af) |
 
 ## Repository Organization
 
