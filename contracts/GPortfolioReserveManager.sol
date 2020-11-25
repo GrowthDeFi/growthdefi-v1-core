@@ -20,7 +20,7 @@ library GPortfolioReserveManager
 	using EnumerableSet for EnumerableSet.AddressSet;
 	using GPortfolioReserveManager for GPortfolioReserveManager.Self;
 
-	uint256 constant DEFAULT_LIQUID_REBALANCE_MARGIN = 10e16; // 10%
+	uint256 constant DEFAULT_LIQUID_REBALANCE_MARGIN = 95e15; // 9.5%
 	uint256 constant DEFAULT_PORTFOLIO_REBALANCE_MARGIN = 1e16; // 1%
 	uint256 constant MAXIMUM_TOKEN_COUNT = 5;
 
