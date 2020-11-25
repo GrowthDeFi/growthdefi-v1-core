@@ -9,6 +9,8 @@ import { GMining } from "./GMining.sol";
 import { G } from "./G.sol";
 import { GC } from "./GC.sol";
 
+import { $ } from "./network/$.sol";
+
 /**
  * @notice This abstract contract provides the basis implementation for all
  *         gcTokens, i.e. gTokens that use Compound cTokens as reserve, and
@@ -228,5 +230,16 @@ abstract contract GCTokenBase is GTokenBase, GCToken, GMining
 		G.pushFunds(underlyingToken, _from, _underlyingCost);
 		_burn(_from, _grossShares);
 		_mint(address(this), _feeShares.div(2));
+	}
+
+	/**
+	 * @dev The default behavior of this function is to send the funds to
+	 *      address(0), but we override it and send the funds to the stkGRO
+	 *      contract instead.
+	 * @param _stakesAmount The amount of the stakes token being burned.
+	 */
+	function _burnStakes(uint256 _stakesAmount) internal override
+	{
+		G.pushFunds(stakesToken, $.stkGRO, _stakesAmount);
 	}
 }

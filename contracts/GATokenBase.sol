@@ -9,6 +9,8 @@ import { GMining } from "./GMining.sol";
 import { G } from "./G.sol";
 import { GA } from "./GA.sol";
 
+import { $ } from "./network/$.sol";
+
 /**
  * @notice This abstract contract provides the basis implementation for all
  *         gaTokens, i.e. gTokens that use Aave aTokens as reserve, and
@@ -224,5 +226,16 @@ abstract contract GATokenBase is GTokenBase, GCToken, GMining
 		G.pushFunds(underlyingToken, _from, _underlyingCost);
 		_burn(_from, _grossShares);
 		_mint(address(this), _feeShares.div(2));
+	}
+
+	/**
+	 * @dev The default behavior of this function is to send the funds to
+	 *      address(0), but we override it and send the funds to the stkGRO
+	 *      contract instead.
+	 * @param _stakesAmount The amount of the stakes token being burned.
+	 */
+	function _burnStakes(uint256 _stakesAmount) internal override
+	{
+		G.pushFunds(stakesToken, $.stkGRO, _stakesAmount);
 	}
 }

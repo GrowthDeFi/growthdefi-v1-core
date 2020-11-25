@@ -36,6 +36,14 @@ library $
 	event Debug(address indexed _from, string _message, uint256 _value);
 	event Debug(address indexed _from, string _message, address _address);
 
+	address constant stkGRO =
+		NETWORK == Network.Mainnet ? 0xD93f98b483CC2F9EFE512696DF8F5deCB73F9497 :
+		// NETWORK == Network.Ropsten ? 0x0000000000000000000000000000000000000000 :
+		// NETWORK == Network.Rinkeby ? 0x0000000000000000000000000000000000000000 :
+		NETWORK == Network.Kovan ? 0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af :
+		// NETWORK == Network.Goerli ? 0x0000000000000000000000000000000000000000 :
+		0x0000000000000000000000000000000000000000;
+
 	address constant GRO =
 		NETWORK == Network.Mainnet ? 0x09e64c2B61a5f1690Ee6fbeD9baf5D6990F8dFd0 :
 		NETWORK == Network.Ropsten ? 0x5BaF82B5Eddd5d64E03509F0a7dBa4Cbf88CF455 :
