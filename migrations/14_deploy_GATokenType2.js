@@ -64,7 +64,7 @@ module.exports = async (deployer, network) => {
       const gtoken = await GToken.deployed();
       const utoken = await IERC20.at(await token.underlyingToken());
       await gtoken.insertToken(token.address);
-      await gtoken.transferTokenPercent(utoken.address, token.address, percent);
+      await gtoken.anounceTokenPercentTransfer(utoken.address, token.address, percent);
     }
   }
 };
