@@ -15,7 +15,7 @@ This repository contains the source code for the GrowthDeFi smart contracts
 
 | Token  | Kovan Address                                                                                                               |
 | ------ | --------------------------------------------------------------------------------------------------------------------------- |
-| gcDAI  | [0x7fFFd060f4f9ba6c0d281cfFb426036A9A6F89FA](https://kovan.etherscan.io/address/0x7fFFd060f4f9ba6c0d281cfFb426036A9A6F89FA) |
+| gcDAI  | [0x8Cde5552602DB7563f424d105217e098d96fce36](https://kovan.etherscan.io/address/0x8Cde5552602DB7563f424d105217e098d96fce36) |
 | gcUSDC | [0x151ac053B6EEEB604c957f2E1F69F797834DB39b](https://kovan.etherscan.io/address/0x151ac053B6EEEB604c957f2E1F69F797834DB39b) |
 | stkGRO | [0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af](https://kovan.etherscan.io/address/0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af) |
 
