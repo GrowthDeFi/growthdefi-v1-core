@@ -2,6 +2,7 @@
 pragma solidity ^0.6.0;
 
 import { GTokenBase } from "./GTokenBase.sol";
+import { GPortfolio } from "./GPortfolio.sol";
 import { GPortfolioReserveManager } from "./GPortfolioReserveManager.sol";
 
 /**
@@ -29,7 +30,7 @@ import { GPortfolioReserveManager } from "./GPortfolioReserveManager.sol";
  *         associated locked liquidity pool and follow the same fee structure.
  *         See GTokenBase and GPortfolioReserveManager for further documentation.
  */
-contract GTokenType0 is GTokenBase
+contract GTokenType0 is GTokenBase, GPortfolio
 {
 	using GPortfolioReserveManager for GPortfolioReserveManager.Self;
 
@@ -69,7 +70,7 @@ contract GTokenType0 is GTokenBase
 	 *         contract by the owner.
 	 * @return _count The number of gTokens that make up the portfolio.
 	 */
-	function tokenCount() public view returns (uint256 _count)
+	function tokenCount() public view override returns (uint256 _count)
 	{
 		return prm.tokenCount();
 	}
@@ -82,7 +83,7 @@ contract GTokenType0 is GTokenBase
 	 * @param _index The desired index, must be less than the token count.
 	 * @return _token The gToken currently present at the given index.
 	 */
-	function tokenAt(uint256 _index) public view returns (address _token)
+	function tokenAt(uint256 _index) public view override returns (address _token)
 	{
 		return prm.tokenAt(_index);
 	}
@@ -95,7 +96,7 @@ contract GTokenType0 is GTokenBase
 	 * @return _percent The token percentual share of the portfolio, as
 	 *                  configured by the owner.
 	 */
-	function tokenPercent(address _token) public view returns (uint256 _percent)
+	function tokenPercent(address _token) public view override returns (uint256 _percent)
 	{
 		return prm.tokenPercent(_token);
 	}
@@ -108,7 +109,7 @@ contract GTokenType0 is GTokenBase
 	 * @return _portfolioRebalanceMargin The portfolio percentual rebalance
 	 *                                   margin, as configured by the owner.
 	 */
-	function getRebalanceMargins() public view returns (uint256 _liquidRebalanceMargin, uint256 _portfolioRebalanceMargin)
+	function getRebalanceMargins() public view override returns (uint256 _liquidRebalanceMargin, uint256 _portfolioRebalanceMargin)
 	{
 		return (prm.liquidRebalanceMargin, prm.portfolioRebalanceMargin);
 	}
@@ -120,9 +121,10 @@ contract GTokenType0 is GTokenBase
 	 * @param _token The contract address of the new gToken to be incorporated
 	 *               into the portfolio.
 	 */
-	function insertToken(address _token) public onlyOwner nonReentrant
+	function insertToken(address _token) public override onlyOwner nonReentrant
 	{
 		prm.insertToken(_token);
+		emit InsertToken(_token);
 	}
 
 	/**
@@ -132,9 +134,23 @@ contract GTokenType0 is GTokenBase
 	 * @param _token The contract address of the gToken to be removed from
 	 *               the portfolio.
 	 */
-	function removeToken(address _token) public onlyOwner nonReentrant
+	function removeToken(address _token) public override onlyOwner nonReentrant
 	{
 		prm.removeToken(_token);
+		emit RemoveToken(_token);
+	}
+
+	/**
+	 * @notice Announces a token percent transfer before it can happen,
+	 *         signaling the intention to modify the porfolio distribution.
+	 * @param _sourceToken The token address to provide the share.
+	 * @param _targetToken The token address to receive the share.
+	 * @param _percent The percentual share to shift.
+	 */
+	function anounceTokenPercentTransfer(address _sourceToken, address _targetToken, uint256 _percent) public override onlyOwner nonReentrant
+	{
+		prm.announceTokenPercentTransfer(_sourceToken, _targetToken, _percent);
+		emit AnnounceTokenPercentTransfer(_sourceToken, _targetToken, _percent);
 	}
 
 	/**
@@ -146,9 +162,16 @@ contract GTokenType0 is GTokenBase
 	 * @param _targetToken The token address to receive the share.
 	 * @param _percent The percentual share to shift.
 	 */
-	function transferTokenPercent(address _sourceToken, address _targetToken, uint256 _percent) public onlyOwner nonReentrant
+	function transferTokenPercent(address _sourceToken, address _targetToken, uint256 _percent) public override onlyOwner nonReentrant
 	{
+		uint256 _oldSourceTokenPercent = prm.tokenPercent(_sourceToken);
+		uint256 _oldTargetTokenPercent = prm.tokenPercent(_targetToken);
 		prm.transferTokenPercent(_sourceToken, _targetToken, _percent);
+		uint256 _newSourceTokenPercent = prm.tokenPercent(_sourceToken);
+		uint256 _newTargetTokenPercent = prm.tokenPercent(_targetToken);
+		emit TransferTokenPercent(_sourceToken, _targetToken, _percent);
+		emit ChangeTokenPercent(_sourceToken, _oldSourceTokenPercent, _newSourceTokenPercent);
+		emit ChangeTokenPercent(_targetToken, _oldTargetTokenPercent, _newTargetTokenPercent);
 	}
 
 	/**
@@ -159,7 +182,7 @@ contract GTokenType0 is GTokenBase
 	 * @param _portfolioRebalanceMargin The portfolio percentual rebalance
 	 *                                  margin, to be configured by the owner.
 	 */
-	function setRebalanceMargins(uint256 _liquidRebalanceMargin, uint256 _portfolioRebalanceMargin) public onlyOwner nonReentrant
+	function setRebalanceMargins(uint256 _liquidRebalanceMargin, uint256 _portfolioRebalanceMargin) public override onlyOwner nonReentrant
 	{
 		prm.setRebalanceMargins(_liquidRebalanceMargin, _portfolioRebalanceMargin);
 	}

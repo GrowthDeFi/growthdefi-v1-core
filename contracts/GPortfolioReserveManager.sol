@@ -23,11 +23,14 @@ library GPortfolioReserveManager
 	uint256 constant DEFAULT_LIQUID_REBALANCE_MARGIN = 95e15; // 9.5%
 	uint256 constant DEFAULT_PORTFOLIO_REBALANCE_MARGIN = 1e16; // 1%
 	uint256 constant MAXIMUM_TOKEN_COUNT = 5;
+	uint256 constant PORTFOLIO_CHANGE_WAIT_INTERVAL = 1 days;
+	uint256 constant PORTFOLIO_CHANGE_OPEN_INTERVAL = 1 days;
 
 	struct Self {
 		address reserveToken;
 		EnumerableSet.AddressSet tokens;
 		mapping (address => uint256) percents;
+		mapping (uint256 => uint256) announcements;
 		uint256 liquidRebalanceMargin;
 		uint256 portfolioRebalanceMargin;
 	}
@@ -62,7 +65,7 @@ library GPortfolioReserveManager
 	 */
 	function tokenAt(Self storage _self, uint256 _index) public view returns (address _token)
 	{
-		require(_index < _self.tokens.length(), "Invalid index");
+		require(_index < _self.tokens.length(), "invalid index");
 		return _self.tokens.at(_index);
 	}
 
@@ -88,10 +91,11 @@ library GPortfolioReserveManager
 	 */
 	function insertToken(Self storage _self, address _token) public
 	{
-		require(_self.tokens.length() < MAXIMUM_TOKEN_COUNT, "Limit reached");
+		require(_self.tokens.length() < MAXIMUM_TOKEN_COUNT, "limit reached");
 		address _underlyingToken = GCToken(_token).underlyingToken();
-		require(_underlyingToken == _self.reserveToken, "Mismatched token");
-		require(_self.tokens.add(_token), "Duplicate token");
+		require(_underlyingToken == _self.reserveToken, "mismatched token");
+		require(_self.tokens.add(_token), "duplicate token");
+		assert(_self.percents[_token] == 0);
 	}
 
 	/**
@@ -103,9 +107,22 @@ library GPortfolioReserveManager
 	 */
 	function removeToken(Self storage _self, address _token) public
 	{
-		require(_self.percents[_token] == 0, "Positive percent");
-		require(_self.tokens.remove(_token), "Unknown token");
+		require(_self.percents[_token] == 0, "positive percent");
+		require(_self.tokens.remove(_token), "unknown token");
 		_self._withdrawUnderlying(_token, _self._getUnderlyingReserve(_token));
+	}
+
+	/**
+	 * @dev Announces a token percent transfer before it can happen.
+	 * @param _sourceToken The token address to provide the share.
+	 * @param _targetToken The token address to receive the share.
+	 * @param _percent The percentual share to shift.
+	 */
+	function announceTokenPercentTransfer(Self storage _self, address _sourceToken, address _targetToken, uint256 _percent) public
+	{
+		uint256 _hash = uint256(keccak256(abi.encode(uint256(_sourceToken), uint256(_targetToken), _percent)));
+		uint256 _announcementTime = now;
+		_self.announcements[_hash] = _announcementTime;
 	}
 
 	/**
@@ -113,16 +130,25 @@ library GPortfolioReserveManager
 	 *      one gToken to another gToken. The reserve token can also be
 	 *      used as source or target of the operation. This does not
 	 *      actually shifts funds, only reconfigures the allocation.
-	 *      This method is exposed publicly.
+	 *      This method is exposed publicly. Note that in order to perform
+	 *      a token transfer where the target token is not the reserve token
+	 *      one must account the transfer ahead of time.
+	 *      See anounceTokenPercentTransfer().
 	 * @param _sourceToken The token address to provide the share.
 	 * @param _targetToken The token address to receive the share.
 	 * @param _percent The percentual share to shift.
 	 */
 	function transferTokenPercent(Self storage _self, address _sourceToken, address _targetToken, uint256 _percent) public
 	{
-		require(_percent <= _self.percents[_sourceToken], "Invalid percent");
-		require(_sourceToken != _targetToken, "Invalid transfer");
-		require(_targetToken == _self.reserveToken || _self.tokens.contains(_targetToken), "Unknown token");
+		require(_percent <= _self.percents[_sourceToken], "invalid percent");
+		require(_sourceToken != _targetToken, "invalid transfer");
+		require(_targetToken == _self.reserveToken || _self.tokens.contains(_targetToken), "unknown token");
+		uint256 _hash = uint256(keccak256(abi.encode(uint256(_sourceToken), uint256(_targetToken), _percent)));
+		uint256 _announcementTime = _self.announcements[_hash];
+		uint256 _effectiveTime = _announcementTime + PORTFOLIO_CHANGE_WAIT_INTERVAL;
+		uint256 _cutoffTime = _effectiveTime + PORTFOLIO_CHANGE_OPEN_INTERVAL;
+		require(_targetToken == _self.reserveToken || _effectiveTime <= now && now < _cutoffTime, "unannounced transfer");
+		_self.announcements[_hash] = 0;
 		_self.percents[_sourceToken] -= _percent;
 		_self.percents[_targetToken] += _percent;
 	}
@@ -138,8 +164,8 @@ library GPortfolioReserveManager
 	 */
 	function setRebalanceMargins(Self storage _self, uint256 _liquidRebalanceMargin, uint256 _portfolioRebalanceMargin) public
 	{
-		require(0 <= _liquidRebalanceMargin && _liquidRebalanceMargin <= 1e18, "Invalid margin");
-		require(0 <= _portfolioRebalanceMargin && _portfolioRebalanceMargin <= 1e18, "Invalid margin");
+		require(0 <= _liquidRebalanceMargin && _liquidRebalanceMargin <= 1e18, "invalid margin");
+		require(0 <= _portfolioRebalanceMargin && _portfolioRebalanceMargin <= 1e18, "invalid margin");
 		_self.liquidRebalanceMargin = _liquidRebalanceMargin;
 		_self.portfolioRebalanceMargin = _portfolioRebalanceMargin;
 	}
