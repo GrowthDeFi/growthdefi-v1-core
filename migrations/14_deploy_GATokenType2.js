@@ -38,7 +38,7 @@ module.exports = async (deployer, network) => {
     const token = await GAToken.deployed();
     if (!['ropsten', 'rinkeby', 'kovan', 'goerli'].includes(network)) {
       await token.setExchange(exchange.address);
-      await token.setGrowthGulpRange(`${10000e6}`, `${20000e6}`);
+      await token.setGrowthGulpRange('10000000000000000000000', '20000000000000000000000');
     }
     if (!['mainnet', 'development', 'testing'].includes(network)) {
       await token.setCollateralizationRatio('0', '0');

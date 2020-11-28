@@ -37,7 +37,7 @@ module.exports = async (deployer, network) => {
     if (!['rinkeby'].includes(network)) {
       await token.setExchange(exchange.address);
       await token.setMiningGulpRange(`${20e18}`, `${500e18}`);
-      await token.setGrowthGulpRange(`${10000e6}`, `${20000e6}`);
+      await token.setGrowthGulpRange('10000000000000000000000', '20000000000000000000000');
     }
     if (!['ropsten', 'goerli'].includes(network)) {
       const value = `${1e18}`;
