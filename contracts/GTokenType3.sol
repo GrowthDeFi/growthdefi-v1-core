@@ -117,7 +117,7 @@ contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 	 * @return _totalReserve The amount of the reserve token corresponding
 	 *                       to this contract's balance.
 	 */
-	function totalReserve() public view virtual override returns (uint256 _totalReserve)
+	function totalReserve() public view override returns (uint256 _totalReserve)
 	{
 		return G.getBalance(reserveToken);
 	}
@@ -234,7 +234,7 @@ contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 	 * @param _grossShares The amount of shares for which the equivalent,
 	 *                     in the reserve token, will be burned.
 	 */
-	function _burnReserveFromShares(uint256 _grossShares) internal virtual
+	function _burnReserveFromShares(uint256 _grossShares) internal
 	{
 		// we use the withdrawal formula to calculated how much is burned (withdrawn) from the contract
 		// since the fee is 0 using the deposit formula would yield the same amount

@@ -60,7 +60,7 @@ contract GTokenType0 is GTokenBase, GPortfolio
 	 * @return _totalReserve The amount of the reserve token corresponding
 	 *                       to this contract's worth.
 	 */
-	function totalReserve() public view virtual override returns (uint256 _totalReserve)
+	function totalReserve() public view override returns (uint256 _totalReserve)
 	{
 		return prm.totalReserve();
 	}
