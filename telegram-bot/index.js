@@ -175,7 +175,7 @@ async function sendMessage(message) {
     console.log(message);
     try {
       const url = 'https://api.telegram.org/bot'+ telegramBotApiKey +'/sendMessage';
-      await axios.post(url, { chat_id: telegramBotChatId, text: message, parse_mode: 'HTML' });
+      await axios.post(url, { chat_id: telegramBotChatId, text: message, parse_mode: 'HTML', disable_web_page_preview: true });
       lastMessage = message;
     } catch (e) {
       console.log('FAILURE', e.message);
@@ -321,7 +321,7 @@ async function main(args) {
       const lines = [];
       for (const gctoken of gctokens) {
         const vitals = await checkVitals(gctoken);
-        const line = '<b><a href="https://etherscan.io/address/' + gctoken.address + '">' + gctoken.symbol + '</a></b> <i>' + vitals.collateralizationRatio + '</i>';
+        const line = '<a href="https://etherscan.io/address/' + gctoken.address + '"><b>' + gctoken.symbol + '</b></a> <i>' + vitals.collateralizationRatio + '</i>';
         lines.push(line);
       }
       message = lines.join('\n');
