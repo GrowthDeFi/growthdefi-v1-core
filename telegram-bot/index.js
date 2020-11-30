@@ -266,6 +266,18 @@ const DEFAULT_ADDRESS = {
   'gcUSDC': {
     'mainnet': '0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D',
   },
+  'gcDAIv2': {
+    'mainnet': '0x4085669d375D7EBb225C05F6128e60C19079ee1c',
+  },
+  'gcUSDCv2': {
+    'mainnet': '0x0e93b2D3969A0a6b71CE21Aa5be417cd4cAC38D0',
+  },
+  'gcETH': {
+    'mainnet': '0xF510949599b90f78A0B40aae82539D09b9bE9e28',
+  },
+  'gcWBTC': {
+    'mainnet': '0x1085045eF3f1564e4dA4C7315C0B7448d82d5D32',
+  },
 };
 
 function getContractAddress(name) {
@@ -297,7 +309,10 @@ async function main(args) {
 
   await sleep(60 * 1000);
 
-  const names = ['gcDAI', 'gcUSDC'];
+  const names = [
+    'gcDAI', 'gcUSDC',
+    'gcDAIv2', 'gcUSDCv2', 'gcETH', 'gcWBTC',
+  ];
 
   let gctokens = null;
 
