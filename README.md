@@ -9,14 +9,26 @@ This repository contains the source code for the GrowthDeFi smart contracts
 
 | Token  | Mainnet Address                                                                                                             |
 | ------ | --------------------------------------------------------------------------------------------------------------------------- |
-| gcDAI  | [0x8c659d745eB24DF270A952F68F4B1d6817c3795C](https://etherscan.io/address/0x8c659d745eB24DF270A952F68F4B1d6817c3795C)       |
-| gcUSDC | [0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D](https://etherscan.io/address/0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D)       |
+| gDAI   | [0x5301988A8EB906a65b57e9BAF4750A3C74e3E635](https://etherscan.io/address/0x5301988A8EB906a65b57e9BAF4750A3C74e3E635)       |
+| gUSDC  | [0x6dfaabaf237174Fb5E2c12e2130613d64E1a4bbe](https://etherscan.io/address/0x6dfaabaf237174Fb5E2c12e2130613d64E1a4bbe)       |
+| gETH   | [0x3eEE7Fe99640c47ABF43Cd2C2B6A80EB785e38cf](https://etherscan.io/address/0x3eEE7Fe99640c47ABF43Cd2C2B6A80EB785e38cf)       |
+| gWBTC  | [0xe567B3174af8eA368ed536998a597147Ec29De8f](https://etherscan.io/address/0xe567B3174af8eA368ed536998a597147Ec29De8f)       |
+| gcDAI  | [0x4085669d375D7EBb225C05F6128e60C19079ee1c](https://etherscan.io/address/0x4085669d375D7EBb225C05F6128e60C19079ee1c)       |
+| gcUSDC | [0x0e93b2D3969A0a6b71CE21Aa5be417cd4cAC38D0](https://etherscan.io/address/0x0e93b2D3969A0a6b71CE21Aa5be417cd4cAC38D0)       |
+| gcETH  | [0xF510949599b90f78A0B40aae82539D09b9bE9e28](https://etherscan.io/address/0xF510949599b90f78A0B40aae82539D09b9bE9e28)       |
+| gcWBTC | [0x1085045eF3f1564e4dA4C7315C0B7448d82d5D32](https://etherscan.io/address/0x1085045eF3f1564e4dA4C7315C0B7448d82d5D32)       |
 | stkGRO | [0xD93f98b483CC2F9EFE512696DF8F5deCB73F9497](https://etherscan.io/address/0xD93f98b483CC2F9EFE512696DF8F5deCB73F9497)       |
 
 | Token  | Kovan Address                                                                                                               |
 | ------ | --------------------------------------------------------------------------------------------------------------------------- |
+| gDAI   | [0x8e7D3c9D614a49d54FA1176B8CE7fcdDcE571a6E](https://kovan.etherscan.io/address/0x8e7D3c9D614a49d54FA1176B8CE7fcdDcE571a6E) |
+| gUSDC  | [0x7AE53D7076c5Df0762A7e85fa24c01408A63c1e8](https://kovan.etherscan.io/address/0x7AE53D7076c5Df0762A7e85fa24c01408A63c1e8) |
+| gETH   | [0x4104F56839F8FD1FD67297713213DE447C33556E](https://kovan.etherscan.io/address/0x4104F56839F8FD1FD67297713213DE447C33556E) |
+| gWBTC  | [0xE45d930b67269CeBf207aAB4dCc200463f439634](https://kovan.etherscan.io/address/0xE45d930b67269CeBf207aAB4dCc200463f439634) |
 | gcDAI  | [0x8Cde5552602DB7563f424d105217e098d96fce36](https://kovan.etherscan.io/address/0x8Cde5552602DB7563f424d105217e098d96fce36) |
 | gcUSDC | [0x151ac053B6EEEB604c957f2E1F69F797834DB39b](https://kovan.etherscan.io/address/0x151ac053B6EEEB604c957f2E1F69F797834DB39b) |
+| gcETH  | [0x9Ca66B0165fF06066cd4f39731bBD2797E4E0691](https://kovan.etherscan.io/address/0x9Ca66B0165fF06066cd4f39731bBD2797E4E0691) |
+| gcWBTC | [0xb389dc7A147065c0F0572b8c3340F6F01D427751](https://kovan.etherscan.io/address/0xb389dc7A147065c0F0572b8c3340F6F01D427751) |
 | stkGRO | [0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af](https://kovan.etherscan.io/address/0x760FbB334dbbc15B9774e3d9fA0def86C0A6e7Af) |
 
 ## Repository Organization
