@@ -261,15 +261,9 @@ async function checkVitals(gctoken) {
 
 const DEFAULT_ADDRESS = {
   'gcDAI': {
-    'mainnet': '0x8c659d745eB24DF270A952F68F4B1d6817c3795C',
-  },
-  'gcUSDC': {
-    'mainnet': '0x3C918ab39C4680d3eBb3EAFcA91C3494F372a20D',
-  },
-  'gcDAIv2': {
     'mainnet': '0x4085669d375D7EBb225C05F6128e60C19079ee1c',
   },
-  'gcUSDCv2': {
+  'gcUSDC': {
     'mainnet': '0x0e93b2D3969A0a6b71CE21Aa5be417cd4cAC38D0',
   },
   'gcETH': {
@@ -310,8 +304,7 @@ async function main(args) {
   await sleep(60 * 1000);
 
   const names = [
-    'gcDAI', 'gcUSDC',
-    'gcDAIv2', 'gcUSDCv2', 'gcETH', 'gcWBTC',
+    'gcDAI', 'gcUSDC', 'gcETH', 'gcWBTC',
   ];
 
   let gctokens = null;
@@ -328,7 +321,7 @@ async function main(args) {
       const lines = [];
       for (const gctoken of gctokens) {
         const vitals = await checkVitals(gctoken);
-        const line = '<b>' + gctoken.symbol + '</b> <i>' + vitals.collateralizationRatio + '</i>';
+        const line = '<b><a href="https://etherscan.io/address/' + gctoken.address + '">' + gctoken.symbol + '</a></b> <i>' + vitals.collateralizationRatio + '</i>';
         lines.push(line);
       }
       message = lines.join('\n');
