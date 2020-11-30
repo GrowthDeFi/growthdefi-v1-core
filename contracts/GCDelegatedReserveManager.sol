@@ -21,7 +21,7 @@ library GCDelegatedReserveManager
 
 	uint256 constant MAXIMUM_COLLATERALIZATION_RATIO = 96e16; // 96% of 50% = 48%
 	uint256 constant DEFAULT_COLLATERALIZATION_RATIO = 66e16; // 66% of 50% = 33%
-	uint256 constant DEFAULT_COLLATERALIZATION_MARGIN = 8e16; // 8% of 50% = 4%
+	uint256 constant DEFAULT_COLLATERALIZATION_MARGIN = 15e16; // 15% of 50% = 7.5%
 
 	struct Self {
 		address reserveToken;
