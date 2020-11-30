@@ -152,8 +152,8 @@ function units(coins, decimals) {
 const [account] = web3.currentProvider.getAddresses();
 
 const ABI_ERC20 = require('../build/contracts/ERC20.json').abi;
-const ABI_GTOKEN = require('../build/contracts/GToken.json').abi;
-const ABI_GCTOKEN = require('../build/contracts/GCToken.json').abi;
+const ABI_GTOKEN = require('../build/contracts/GTokenBase.json').abi;
+const ABI_GCTOKEN = require('../build/contracts/GCTokenBase.json').abi;
 const ABI_GEXCHANGE = require('../build/contracts/GUniswapV2Exchange.json').abi;
 
 async function getEthBalance(address) {
@@ -233,7 +233,10 @@ async function newGToken(address) {
     allocateLiquidityPool: async (stakesAmount, sharesAmount) => {
       const _stakesAmount = units(stakesAmount, stakesToken.decimals);
       const _sharesAmount = units(sharesAmount, self.decimals);
-      await contract.methods.allocateLiquidityPool(_stakesAmount, _sharesAmount).send({ from: account });
+      const gasEstimate = await contract.methods.allocateLiquidityPool(_stakesAmount, _sharesAmount).estimateGas({ from: account });
+      console.log('gas estimate', gasEstimate);
+      const { gasUsed } = await contract.methods.allocateLiquidityPool(_stakesAmount, _sharesAmount).send({ from: account });
+      console.log('gas used', gasUsed);
     },
   });
 }
