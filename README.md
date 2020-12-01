@@ -256,6 +256,7 @@ Relevant implementation files:
 
 * [GToken.sol](contracts/GToken.sol)
 * [GFormulae.sol](contracts/GFormulae.sol)
+* [GPooler.sol](contracts/GPooler.sol)
 * [GTokenBase.sol](contracts/GTokenBase.sol)
 * [GLiquidityPoolManager.sol](contracts/GLiquidityPoolManager.sol)
 
@@ -291,6 +292,8 @@ Relevant implementation files:
 * [GToken.sol](contracts/GToken.sol)
 * [GFormulae.sol](contracts/GFormulae.sol)
 * [GTokenBase.sol](contracts/GTokenBase.sol)
+* [GPortfolio.sol](contracts/GPortfolio.sol)
+* [GTokenType0.sol](contracts/GTokenType0.sol)
 * [GPortfolioReserveManager.sol](contracts/GPortfolioReserveManager.sol)
 
 ### Basic gcToken Type 1 functionality
@@ -344,7 +347,9 @@ Relevant implementation files:
 * [GCToken.sol](contracts/GCToken.sol)
 * [GCFormulae.sol](contracts/GCFormulae.sol)
 * [GCTokenBase.sol](contracts/GCTokenBase.sol)
+* [GMining.sol](contracts/GMining.sol)
 * [GCTokenType1.sol](contracts/GCTokenType1.sol)
+* [GFlashBorrower.sol](contracts/GFlashBorrower.sol)
 * [GCLeveragedReserveManager.sol](contracts/GCLeveragedReserveManager.sol)
 
 ### Basic gcToken Type 2 functionality
@@ -368,6 +373,7 @@ Relevant implementation files:
 * [GCToken.sol](contracts/GCToken.sol)
 * [GCFormulae.sol](contracts/GCFormulae.sol)
 * [GCTokenBase.sol](contracts/GCTokenBase.sol)
+* [GMining.sol](contracts/GMining.sol)
 * [GCTokenType2.sol](contracts/GCTokenType2.sol)
 * [GCDelegatedReserveManager.sol](contracts/GCDelegatedReserveManager.sol)
 
