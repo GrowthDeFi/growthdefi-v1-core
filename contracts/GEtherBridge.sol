@@ -48,7 +48,7 @@ contract GEtherBridge
 		address payable _from = msg.sender;
 		address _reserveToken = GToken(_growthToken).reserveToken();
 		require(_reserveToken == $.WETH, "ETH operation not supported by token");
-		G.pullFunds(_reserveToken, _from, _grossShares);
+		G.pullFunds(_growthToken, _from, _grossShares);
 		GToken(_growthToken).withdraw(_grossShares);
 		uint256 _cost = G.getBalance(_reserveToken);
 		G.safeUnwrap(_cost);
