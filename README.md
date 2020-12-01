@@ -111,7 +111,7 @@ presented below. Their actual functionality is described in the next section.
   [GCTokenType1.sol](contracts/GCTokenType1.sol), and Type 2 gcTokens
   [GCTokenType2.sol](contracts/GCTokenType2.sol); and the gaTokens Type 2
   [GATokenType2.sol](contracts/GATokenType2.sol). A special gToken Type 3
-  [GATokenType3.sol](contracts/GATokenType3.sol) provides the foundation for
+  [GTokenType3.sol](contracts/GTokenType3.sol) provides the foundation for
   governance by implementing a 1-level delegation voting token.
 * **Component contracts as (public) libraries** that provide core functionality
   implementation. Besides properly encapsulating the functionality they also
