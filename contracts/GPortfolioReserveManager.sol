@@ -100,16 +100,23 @@ library GPortfolioReserveManager
 
 	/**
 	 * @dev Removes a gToken from the portfolio. The portfolio share of the
-	 *      token must be 0% before it can be removed. The underlying reserve
-	 *      is redeemed upon removal. This method is exposed publicly.
+	 *      token being removed will be tansfered to the reserve token. The
+	 *      underlying reserve is redeemed upon removal. This method is
+	 *      exposed publicly.
 	 * @param _token The contract address of the gToken to be removed from
 	 *               the portfolio.
 	 */
 	function removeToken(Self storage _self, address _token) public
 	{
-		require(_self.percents[_token] == 0, "positive percent");
 		require(_self.tokens.remove(_token), "unknown token");
-		_self._withdrawUnderlying(_token, _self._getUnderlyingReserve(_token));
+		uint256 _percent = _self.percents[_token];
+		_self.percents[_token] = 0;
+		_self.percents[_self.reserveToken] += _percent;
+		bool _success = _self._withdrawUnderlying(_token, _self._getUnderlyingReserve(_token));
+		// note that withdrawal failure does not prevent token removal
+		// in that case funds would still be help by this contract
+		// the token could be reinserted for a second try
+		_success; // silences warnings
 	}
 
 	/**

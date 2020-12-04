@@ -129,8 +129,8 @@ contract GTokenType0 is GTokenBase, GPortfolio
 
 	/**
 	 * @notice Removes a gToken from the portfolio. The portfolio share of
-	 *         the token must be 0% before it can be removed. The underlying
-	 *         reserve is redeemed upon removal.
+	 *         the token being removed will be tansfered to the reserve token.
+	 *         The underlying reserve is redeemed upon removal.
 	 * @param _token The contract address of the gToken to be removed from
 	 *               the portfolio.
 	 */
