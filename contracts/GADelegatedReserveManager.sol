@@ -282,7 +282,7 @@ library GADelegatedReserveManager
 	function _deposit(Self storage _self, uint256 _cost) internal returns (bool _success)
 	{
 		G.approveFunds(_self.growthReserveToken, _self.growthToken, _cost);
-		try GToken(_self.growthToken).deposit(_cost) {
+		try GToken(_self.growthToken).deposit(_cost, 0) {
 			return true;
 		} catch (bytes memory /* _data */) {
 			G.approveFunds(_self.growthReserveToken, _self.growthToken, 0);
@@ -297,7 +297,7 @@ library GADelegatedReserveManager
 	 */
 	function _withdraw(Self storage _self, uint256 _grossShares) internal returns (bool _success)
 	{
-		try GToken(_self.growthToken).withdraw(_grossShares) {
+		try GToken(_self.growthToken).withdraw(_grossShares, 0) {
 			return true;
 		} catch (bytes memory /* _data */) {
 			return false;

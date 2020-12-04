@@ -22,6 +22,6 @@ interface GToken is IERC20
 	function withdrawalFee() external view returns (uint256 _withdrawalFee);
 
 	// open functions
-	function deposit(uint256 _cost) external;
-	function withdraw(uint256 _grossShares) external;
+	function deposit(uint256 _cost, uint256 _minShares) external;
+	function withdraw(uint256 _grossShares, uint256 _minCost) external;
 }

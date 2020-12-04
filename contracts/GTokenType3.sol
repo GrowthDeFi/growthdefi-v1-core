@@ -176,13 +176,16 @@ contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 	 *         approved.
 	 * @param _cost The amount of reserve token being deposited in the
 	 *              operation.
+	 * @param _minShares The minimum amount of shares expected to be
+	 *                   received. If the minimum is not met the operation
+	 *                   will fail.
 	 */
-	function deposit(uint256 _cost) public override nonReentrant
+	function deposit(uint256 _cost, uint256 _minShares) public override nonReentrant
 	{
 		address _from = msg.sender;
 		require(_cost > 0, "cost must be greater than 0");
 		(uint256 _netShares, uint256 _feeShares) = GFormulae._calcDepositSharesFromCost(_cost, totalReserve(), totalSupply(), depositFee());
-		require(_netShares > 0, "shares must be greater than 0");
+		require(_netShares >= _minShares, "minimum not met");
 		G.pullFunds(reserveToken, _from, _cost);
 		_mint(_from, _netShares);
 		_burnReserveFromShares(_feeShares.div(2));
@@ -198,14 +201,17 @@ contract GTokenType3 is ERC20, ReentrancyGuard, GToken, GVoting
 	 *         immediately burned.
 	 * @param _grossShares The gross amount of this gToken shares being
 	 *                     redeemed in the operation.
+	 * @param _minCost The minimum amount of reserve expected to be
+	 *                 received. If the minimum is not met the operation
+	 *                 will fail.
 	 */
-	function withdraw(uint256 _grossShares) public override nonReentrant
+	function withdraw(uint256 _grossShares, uint256 _minCost) public override nonReentrant
 	{
 		address _from = msg.sender;
 		require(_grossShares > 0, "shares must be greater than 0");
 		(uint256 _cost, uint256 _feeShares) = GFormulae._calcWithdrawalCostFromShares(_grossShares, totalReserve(), totalSupply(), withdrawalFee());
-		require(_cost > 0, "cost must be greater than 0");
 		_cost = G.min(_cost, G.getBalance(reserveToken));
+		require(_cost >= _minCost, "minimum not met");
 		G.pushFunds(reserveToken, _from, _cost);
 		_burn(_from, _grossShares);
 		_burnReserveFromShares(_feeShares.div(2));

@@ -26,8 +26,8 @@ interface GCToken is GToken
 	function collateralizationRatio() external view returns (uint256 _collateralizationRatio, uint256 _collateralizationMargin);
 
 	// open functions
-	function depositUnderlying(uint256 _underlyingCost) external;
-	function withdrawUnderlying(uint256 _grossShares) external;
+	function depositUnderlying(uint256 _underlyingCost, uint256 _minShares) external;
+	function withdrawUnderlying(uint256 _grossShares, uint256 _minUnderlyingCost) external;
 
 	// priviledged functions
 	function setCollateralizationRatio(uint256 _collateralizationRatio, uint256 _collateralizationMargin) external;

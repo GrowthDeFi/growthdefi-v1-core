@@ -427,7 +427,7 @@ library GPortfolioReserveManager
 		_amount = G.min(_amount, G.getBalance(_self.reserveToken));
 		if (_amount == 0) return true;
 		G.approveFunds(_self.reserveToken, _token, _amount);
-		try GCToken(_token).depositUnderlying(_amount) {
+		try GCToken(_token).depositUnderlying(_amount, 0) {
 			return true;
 		} catch (bytes memory /* _data */) {
 			G.approveFunds(_self.reserveToken, _token, 0);
@@ -446,7 +446,7 @@ library GPortfolioReserveManager
 		uint256 _grossShares = _self._calcWithdrawalSharesFromUnderlyingCost(_token, _amount);
 		_grossShares = G.min(_grossShares, G.getBalance(_token));
 		if (_grossShares == 0) return true;
-		try GCToken(_token).withdrawUnderlying(_grossShares) {
+		try GCToken(_token).withdrawUnderlying(_grossShares, 0) {
 			return true;
 		} catch (bytes memory /* _data */) {
 			return false;

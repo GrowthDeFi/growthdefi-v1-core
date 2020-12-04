@@ -190,14 +190,17 @@ abstract contract GATokenBase is GTokenBase, GCToken, GMining
 	 *         GTokenBase.sol for further documentation.
 	 * @param _underlyingCost The amount of the underlying asset being
 	 *                        deposited in the operation.
+	 * @param _minShares The minimum amount of shares expected to be
+	 *                   received. If the minimum is not met the operation
+	 *                   will fail.
 	 */
-	function depositUnderlying(uint256 _underlyingCost) public override nonReentrant
+	function depositUnderlying(uint256 _underlyingCost, uint256 _minShares) public override nonReentrant
 	{
 		address _from = msg.sender;
 		require(_underlyingCost > 0, "underlying cost must be greater than 0");
 		uint256 _cost = GCFormulae._calcCostFromUnderlyingCost(_underlyingCost, exchangeRate());
 		(uint256 _netShares, uint256 _feeShares) = GFormulae._calcDepositSharesFromCost(_cost, totalReserve(), totalSupply(), depositFee());
-		require(_netShares > 0, "shares must be greater than 0");
+		require(_netShares >= _minShares, "minimum not met");
 		G.pullFunds(underlyingToken, _from, _underlyingCost);
 		GA.safeLend(reserveToken, _underlyingCost);
 		require(_prepareDeposit(_cost), "not available at the moment");
@@ -212,16 +215,19 @@ abstract contract GATokenBase is GTokenBase, GCToken, GMining
 	 *         further documentation.
 	 * @param _grossShares The gross amount of this gaToken shares being
 	 *                     redeemed in the operation.
+	 * @param _minUnderlyingCost The minimum amount of the underlying asset
+	 *                           expected to be received. If the minimum is
+	 *                           not met the operation will fail.
 	 */
-	function withdrawUnderlying(uint256 _grossShares) public override nonReentrant
+	function withdrawUnderlying(uint256 _grossShares, uint256 _minUnderlyingCost) public override nonReentrant
 	{
 		address _from = msg.sender;
 		require(_grossShares > 0, "shares must be greater than 0");
 		(uint256 _cost, uint256 _feeShares) = GFormulae._calcWithdrawalCostFromShares(_grossShares, totalReserve(), totalSupply(), withdrawalFee());
 		uint256 _underlyingCost = GCFormulae._calcUnderlyingCostFromCost(_cost, exchangeRate());
-		require(_underlyingCost > 0, "underlying cost must be greater than 0");
 		require(_prepareWithdrawal(_cost), "not available at the moment");
 		_underlyingCost = G.min(_underlyingCost, GA.getLendAmount(reserveToken));
+		require(_underlyingCost >= _minUnderlyingCost, "minimum not met");
 		GA.safeRedeem(reserveToken, _underlyingCost);
 		G.pushFunds(underlyingToken, _from, _underlyingCost);
 		_burn(_from, _grossShares);
