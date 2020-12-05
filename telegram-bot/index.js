@@ -462,8 +462,8 @@ async function main(args) {
         lines.push('<a href="' + URL_PREFIX[network] + gctoken.address + '"><b>' + gctoken.symbol + '</b></a>');
         lines.push('ratio: ' + ratioText);
         lines.push('balance: ' + curBalanceText);
-        if (criticalLevel) lines.push('!!CRITICAL!! ratio >= ' + ctcRatioText);
-        if (lowBalance) lines.push('!!LOW!! balance < ' + minBalanceText);
+        if (criticalLevel) lines.push('!!CRITICAL!! ratio &gt;= ' + ctcRatioText);
+        if (lowBalance) lines.push('!!LOW!! balance &lt; ' + minBalanceText);
         lines.push('');
 
 	if (criticalLevel) criticalList.push(gctoken);
