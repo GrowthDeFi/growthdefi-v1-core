@@ -309,10 +309,11 @@ const SAFE_TOKEN_MARGIN = {
 };
 
 const DEPOSIT_AMOUNT = {
-  'gcDAI': '0.001', // DAI
-  'gcUSDC': '0.001', // USDC
-  'gcETH': '0.00001', // WETH
-  'gcWBTC': '0.00001', // WBTC
+  'ETH': '0.1',
+  'DAI': '0.001',
+  'USDC': '0.001',
+  'WETH': '0.00001',
+  'WBTC': '0.00001',
 };
 
 async function getMaxCollateralizationRatio(gctoken) {
@@ -439,16 +440,25 @@ async function main(args) {
       const lines = [];
       {
         const account = getAccount();
-        const ethBalance = await getEthBalance();
+        const symbol = 'ETH';
+        const curBalance = await getEthBalance();
+        const minBalance = MININUM_BALANCE_FACTOR * Number(DEPOSIT_AMOUNT[symbol] || '1');
+        const lowBalance = curBalance < minBalance;
+
+        const curBalanceText = curBalance + ' ' + symbol;
+        const minBalanceText = minBalance + ' ' + symbol;
+
         lines.push('<a href="' + URL_PREFIX[network] + account + '"><b>Bot Address</b></a>');
-        lines.push('balance: ' + ethBalance + ' ETH');
+        lines.push('balance: ' + curBalanceText);
+        if (lowBalance) lines.push('!!LOW!! balance &lt; ' + minBalanceText);
         lines.push('');
       }
       for (const gctoken of gctokens) {
         const vitals = await checkVitals(gctoken);
         const criticalLevel = vitals.collateralizationRatio >= vitals.criticalCollateralizationRatio;
+        const symbol = vitals.underlyingSymbol;
         const curBalance = Number(vitals.underlyingBalance);
-        const minBalance = MININUM_BALANCE_FACTOR * Number(DEPOSIT_AMOUNT[gctoken.symbol] || '1');
+        const minBalance = MININUM_BALANCE_FACTOR * Number(DEPOSIT_AMOUNT[symbol] || '1');
         const lowBalance = curBalance < minBalance;
 
         const curRatioText = (100 * vitals.collateralizationRatio).toFixed(2) + '%';
@@ -456,8 +466,8 @@ async function main(args) {
         const maxRatioText = (100 * vitals.maxCollateralizationRatio).toFixed(2) + '%';
         const ratioText = curRatioText + ' of ' + maxRatioText;
 
-        const curBalanceText = curBalance + ' ' + vitals.underlyingSymbol;
-        const minBalanceText = minBalance + ' ' + vitals.underlyingSymbol;
+        const curBalanceText = curBalance + ' ' + symbol;
+        const minBalanceText = minBalance + ' ' + symbol;
 
         lines.push('<a href="' + URL_PREFIX[network] + gctoken.address + '"><b>' + gctoken.symbol + '</b></a>');
         lines.push('ratio: ' + ratioText);
