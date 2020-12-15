@@ -3,31 +3,19 @@ pragma solidity ^0.6.0;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
-import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
+import { ElasticERC20 } from "./ElasticERC20.sol";
 import { G } from "./G.sol";
 
-contract GElasticToken is ERC20, Ownable, ReentrancyGuard
+contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard
 {
 	using SafeMath for uint256;
 
-	uint256 public scalingFactor = 1e18;
-
 	constructor (string memory _name, string memory _symbol, uint8 _decimals)
-		ERC20(_name, _symbol) public
+		ElasticERC20(_name, _symbol) public
 	{
 		_setupDecimals(_decimals);
-	}
-
-	function scaledTotalSupply() public view returns (uint256 _scaledTotalSupply)
-	{
-		return _scale(totalSupply(), scalingFactor);
-	}
-
-	function balanceOfScaled(address _address) public view returns (uint256 _scaledBalance)
-	{
-		return _scale(balanceOf(_address), scalingFactor);
 	}
 
 	function mint(address _to, uint256 _amount) public onlyOwner
@@ -49,38 +37,12 @@ contract GElasticToken is ERC20, Ownable, ReentrancyGuard
 			}
 		}
 		if (_newScalingFactor > _oldScalingFactor) {
-			uint256 _maxScalingFactor = _calcMaxScalingFactor(totalSupply());
+			uint256 _maxScalingFactor = _calcMaxScalingFactor(unscaledTotalSupply);
 			_newScalingFactor = G.min(_newScalingFactor, _maxScalingFactor);
 		}
-		scalingFactor = _newScalingFactor;
+		_setScalingFactor(_newScalingFactor);
 		emit Rebase(_epoch, _oldScalingFactor, _newScalingFactor);
 	}
 
-	function _calcMaxScalingFactor(uint256 _totalSupply) internal pure returns (uint256 _maxScalingFactor)
-	{
-		return uint256(-1) / _totalSupply;
-	}
-
-	function _scale(uint256 _amount, uint256 _scalingFactor) internal pure returns (uint256 _scaledAmount)
-	{
-		return _amount.mul(_scalingFactor).div(1e24);
-	}
-
-	function _unscale(uint256 _scaledAmount, uint256 _scalingFactor) internal pure returns (uint256 _amount)
-	{
-		return _scaledAmount.mul(1e24).div(_scalingFactor);
-	}
-
-	function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal override
-	{
-		_to; // silences warnings
-		if (_from == address(0)) {
-			uint256 _newTotalSupply = totalSupply().add(_amount);
-			uint256 _maxScalingFactor = _calcMaxScalingFactor(_newTotalSupply);
-			require(scalingFactor <= _maxScalingFactor, "max scaling factor too low");
-		}
-	}
-
-	event NewRebaser(address _oldRebaser, address _newRebaser);
 	event Rebase(uint256 _epoch, uint256 _oldScalingFactor, uint256 _newScalingFactor);
 }
