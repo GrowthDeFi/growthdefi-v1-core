@@ -162,6 +162,12 @@ presented below. Their actual functionality is described in the next section.
 * **A token registry contract** [GTokenRegistry.sol](contracts/GTokenRegistry.sol)
   to facilitate the registration and automatic integration of new gTokens
   via [thegraph.com](https://thegraph.com/).
+* **A Gnosis Safe module contract** [GDAOModule.sol](contracts/GDAOModule.sol)
+  to implement the protocol governance by extending a
+  [Gnosis Safe](https://gnosis-safe.io/) multisig (which is expected to have
+  privileged access to the gTokens admin functionality) allowing for the
+  decentralized update of its signers according to the votes delegated by
+  stkGRO holders.
 * **The reference implementation of the GRO token** is available on
   [GrowthToken.sol](contracts/GrowthToken.sol).
 
@@ -431,6 +437,7 @@ Relevant implementation files:
 * [GFormulae.sol](contracts/GFormulae.sol)
 * [GTokenType3.sol](contracts/GTokenType3.sol)
 * [GVoting.sol](contracts/GVoting.sol)
+* [GDAOModule.sol](contracts/GDAOModule.sol)
 
 ## Building, Deploying and Testing
 

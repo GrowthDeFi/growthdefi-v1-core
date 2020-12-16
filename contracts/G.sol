@@ -7,6 +7,7 @@ import { Wrapping } from "./modules/Wrapping.sol";
 import { Transfers } from "./modules/Transfers.sol";
 import { Conversions } from "./modules/Conversions.sol";
 import { FlashLoans } from "./modules/FlashLoans.sol";
+import { Multisig } from "./modules/Multisig.sol";
 import { BalancerLiquidityPoolAbstraction } from "./modules/BalancerLiquidityPoolAbstraction.sol";
 
 /**
@@ -42,6 +43,12 @@ library G
 	function getFlashLoanLiquidity(address _token) public view returns (uint256 _liquidityAmount) { return FlashLoans._getFlashLoanLiquidity(_token); }
 	function requestFlashLoan(address _token, uint256 _amount, bytes memory _context) public returns (bool _success) { return FlashLoans._requestFlashLoan(_token, _amount, _context); }
 	function paybackFlashLoan(FlashLoans.Provider _provider, address _token, uint256 _grossAmount) public { FlashLoans._paybackFlashLoan(_provider, _token, _grossAmount); }
+
+	function getOwners(address _safe) public view returns (address[] memory _owners) { return Multisig._getOwners(_safe); }
+	function isOwner(address _safe, address _owner) public view returns (bool _isOwner) { return Multisig._isOwner(_safe, _owner); }
+	function addOwnerWithThreshold(address _safe, address _owner, uint256 _threshold) public returns (bool _success) { return Multisig._addOwnerWithThreshold(_safe, _owner, _threshold); }
+	function removeOwner(address _safe, address _prevOwner, address _owner, uint256 _threshold) public returns (bool _success) { return Multisig._removeOwner(_safe, _prevOwner, _owner, _threshold); }
+	function changeThreshold(address _safe, uint256 _threshold) public returns (bool _success) { return Multisig._changeThreshold(_safe, _threshold); }
 
 	function createPool(address _token0, uint256 _amount0, address _token1, uint256 _amount1) public returns (address _pool) { return BalancerLiquidityPoolAbstraction._createPool(_token0, _amount0, _token1, _amount1); }
 	function joinPool(address _pool, address _token, uint256 _maxAmount) public returns (uint256 _amount) { return BalancerLiquidityPoolAbstraction._joinPool(_pool, _token, _maxAmount); }
