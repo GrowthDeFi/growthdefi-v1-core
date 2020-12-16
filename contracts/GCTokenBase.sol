@@ -225,7 +225,7 @@ abstract contract GCTokenBase is GTokenBase, GCToken, GMining
 		uint256 _underlyingCost = GCFormulae._calcUnderlyingCostFromCost(_cost, exchangeRate());
 		require(_underlyingCost > 0, "underlying cost must be greater than 0");
 		require(_prepareWithdrawal(_cost), "not available at the moment");
-		_underlyingCost = G.min(_underlyingCost, GC.getLendAmount(reserveToken));
+		_underlyingCost = G.min(_underlyingCost, GC.fetchLendAmount(reserveToken));
 		GC.safeRedeem(reserveToken, _underlyingCost);
 		G.pushFunds(underlyingToken, _from, _underlyingCost);
 		_burn(_from, _grossShares);
