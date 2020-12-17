@@ -121,6 +121,11 @@ contract ElasticERC20 is Context, IERC20
 		decimals = _decimals;
 	}
 
+	function maxScalingFactor() public view returns (uint256 _maxScalingFactor)
+	{
+		return _calcMaxScalingFactor(unscaledTotalSupply);
+	}
+
 	function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal virtual { }
 
 	function _calcMaxScalingFactor(uint256 _unscaledTotalSupply) internal pure returns (uint256 _maxScalingFactor)
