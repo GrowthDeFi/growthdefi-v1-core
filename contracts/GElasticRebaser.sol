@@ -4,6 +4,8 @@ pragma experimental ABIEncoderV2;
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import { GElasticToken } from "./GElasticToken.sol";
 
@@ -21,7 +23,9 @@ interface BAL
 
 library UniswapV2OracleLibrary
 {
-	function currentCumulativePrices(address pair, bool isToken0) internal pure returns (uint priceCumulative, uint32 blockTimestamp) {
+	function currentCumulativePrices(address pair, bool isToken0) internal pure returns (uint priceCumulative, uint32 blockTimestamp)
+	{
+		// import this code from uniswap repo
 		pair; isToken0;
 		return (0, 0);
 	}
@@ -53,8 +57,8 @@ contract GElasticRebaser is Ownable
 /*
 	event NewRebaseMintPercent(uint256 oldRebaseMintPerc, uint256 newRebaseMintPerc);
 	event NewReserveContract(address oldReserveContract, address newReserveContract);
-	event TreasuryIncreased(uint256 reservesAdded, uint256 yamsSold, uint256 yamsFromReserves, uint256 yamsToReserves);
 */
+	event TreasuryIncreased(uint256 reservesAdded, uint256 yamsSold, uint256 yamsFromReserves, uint256 yamsToReserves);
 
 	// Stable ordering is not guaranteed.
 	Transaction[] public transactions;
@@ -94,13 +98,11 @@ contract GElasticRebaser is Ownable
 	///@notice boolean showing rebase activation status
 	bool public rebasingActive;
 
-/*
 	/// @notice delays rebasing activation to facilitate liquidity
 	uint256 public constant rebaseDelay = 12 hours;
 
 	/// @notice Time of TWAP initialization
 	uint256 public timeOfTWAPInit;
-*/
 
 	/// @notice YAM token address
 	address public yamAddress;
@@ -300,11 +302,12 @@ contract GElasticRebaser is Ownable
 		reservesContract = reservesContract_;
 		emit NewReserveContract(oldReservesContract, reservesContract_);
 	}
+*/
 
 	/**
 	 * @notice Initializes TWAP start point, starts countdown to first rebase
 	 *
-	 * /
+	 */
 	function init_twap() public
 	{
 		require(timeOfTWAPInit == 0, "already activated");
@@ -322,7 +325,7 @@ contract GElasticRebaser is Ownable
 	/**
 	 * @notice Activates rebasing
 	 * @dev One way function, cannot be undone, callable by anyone
-	 * /
+	 */
 	function activate_rebasing() public
 	{
 		require(timeOfTWAPInit > 0, "twap wasnt intitiated, call init_twap()");
@@ -331,7 +334,6 @@ contract GElasticRebaser is Ownable
 
 		rebasingActive = true;
 	}
-*/
 
 	/**
 	 * @notice Initiates a new rebase operation, provided the minimum time period has elapsed.
@@ -391,7 +393,6 @@ contract GElasticRebaser is Ownable
 		afterRebase(mintAmount, offPegPerc);
 	}
 
-/*
 	function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes memory data) public
 	{
 		// enforce that it is coming from uniswap
@@ -400,7 +401,7 @@ contract GElasticRebaser is Ownable
 		require(sender == address(this), "bad origin");
 		(UniVars memory uniVars) = abi.decode(data, (UniVars));
 
-		YAMTokenInterface yam = YAMTokenInterface(yamAddress);
+		GElasticToken yam = GElasticToken(yamAddress);
 
 		if (uniVars.amountFromReserves > 0) {
 			// transfer from reserves and mint to uniswap
@@ -443,7 +444,6 @@ contract GElasticRebaser is Ownable
 			}
 		}
 	}
-*/
 
 	function buyReserveAndTransfer(uint256 mintAmount, uint256 offPegPerc) internal
 	{
