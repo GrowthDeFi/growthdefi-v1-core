@@ -7,6 +7,8 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
+import { UniswapV2OracleLibrary } from "@uniswap/v2-periphery/contracts/libraries/UniswapV2OracleLibrary.sol";
+
 import { GElasticToken } from "./GElasticToken.sol";
 
 interface UniswapPair
@@ -19,16 +21,6 @@ interface UniswapPair
 interface BAL
 {
 	function gulp(address token) external;
-}
-
-library UniswapV2OracleLibrary
-{
-	function currentCumulativePrices(address pair, bool isToken0) internal pure returns (uint priceCumulative, uint32 blockTimestamp)
-	{
-		// import this code from uniswap repo
-		pair; isToken0;
-		return (0, 0);
-	}
 }
 
 contract GElasticRebaser is Ownable
@@ -311,9 +303,9 @@ contract GElasticRebaser is Ownable
 	function init_twap() public
 	{
 		require(timeOfTWAPInit == 0, "already activated");
-		(uint priceCumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair, isToken0);
-
-		(uint priceCumulativeUSDC,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair, false);
+		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
+		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
+		(,uint priceCumulativeUSDC,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
 
 		require(blockTimestamp > 0, "no trades");
 		blockTimestampLast = blockTimestamp;
@@ -607,8 +599,9 @@ contract GElasticRebaser is Ownable
 	*/
 	function getTWAP() internal returns (uint256)
 	{
-		(uint priceCumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair, isToken0);
-		(uint priceCumulativeETH, ) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair, false);
+		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
+		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
+		(,uint priceCumulativeETH,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
 		uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
 
 		// no period check as is done in isRebaseWindow
@@ -652,8 +645,9 @@ contract GElasticRebaser is Ownable
 	 * /
 	function getCurrentTWAP() public view returns (uint256)
 	{
-		(uint priceCumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair, isToken0);
-		(uint priceCumulativeETH, ) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair, false);
+		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
+		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
+		(,uint priceCumulativeETH,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
 
 		uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
 
