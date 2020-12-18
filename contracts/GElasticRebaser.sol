@@ -18,7 +18,7 @@ interface UniswapPair
 	function sync() external;
 }
 
-interface BAL
+interface BPool
 {
 	function gulp(address token) external;
 }
@@ -122,7 +122,89 @@ contract TransactionsExt is Ownable
 	event TransactionFailed(address indexed destination, uint index, bytes data);
 }
 
-contract GElasticRebaser is Ownable //, TransactionsExt
+contract UniswapPoolsExt is Ownable
+{
+	/// @notice list of uniswap pairs to sync
+	address[] public uniSyncPairs;
+
+	/**
+	 * @notice Uniswap synced pairs
+	 */
+	function getUniSyncPairs() public view returns (address[] memory)
+	{
+		address[] memory pairs = uniSyncPairs;
+		return pairs;
+	}
+
+	/**
+	 * @notice Adds pairs to sync
+	 */
+	function addSyncPairs(address[] memory uniSyncPairs_) public onlyOwner
+	{
+		for (uint256 i = 0; i < uniSyncPairs_.length; i++) {
+			uniSyncPairs.push(uniSyncPairs_[i]);
+		}
+	}
+
+	function removeUniPair(uint256 index) public onlyOwner
+	{
+		if (index >= uniSyncPairs.length) return;
+		for (uint i = index; i < uniSyncPairs.length-1; i++) {
+			uniSyncPairs[i] = uniSyncPairs[i+1];
+		}
+		uniSyncPairs.pop();
+	}
+
+	function updateUniPairs() internal
+	{
+		for (uint256 i = 0; i < uniSyncPairs.length; i++) {
+			UniswapPair(uniSyncPairs[i]).sync();
+		}
+	}
+}
+
+contract BalancerPoolsExt is Ownable
+{
+	/// @notice list of balancer pairs to gulp
+	address[] public balGulpPairs;
+
+	/**
+	 * @notice Uniswap synced pairs
+	 */
+	function getBalGulpPairs() public view returns (address[] memory)
+	{
+		address[] memory pairs = balGulpPairs;
+		return pairs;
+	}
+
+	/**
+	 * @notice Adds pairs to sync
+	 */
+	function addBalPairs(address[] memory balGulpPairs_) public onlyOwner
+	{
+		for (uint256 i = 0; i < balGulpPairs_.length; i++) {
+			balGulpPairs.push(balGulpPairs_[i]);
+		}
+	}
+
+	function removeBalPair(uint256 index) public onlyOwner
+	{
+		if (index >= balGulpPairs.length) return;
+		for (uint i = index; i < balGulpPairs.length-1; i++) {
+			balGulpPairs[i] = balGulpPairs[i+1];
+		}
+		balGulpPairs.pop();
+	}
+
+	function updateBalPairs(address yamAddress) internal
+	{
+		for (uint256 i = 0; i < balGulpPairs.length; i++) {
+			BPool(balGulpPairs[i]).gulp(yamAddress);
+		}
+	}
+}
+
+contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, TransactionsExt
 {
 	using SafeMath for uint256;
 
@@ -197,12 +279,6 @@ contract GElasticRebaser is Ownable //, TransactionsExt
 
 	/// @notice pair for reserveToken <> YAM
 	address public eth_usdc_pair;
-
-	/// @notice list of uniswap pairs to sync
-	address[] public uniSyncPairs;
-
-	/// @notice list of balancer pairs to gulp
-	address[] public balGulpPairs;
 
 	/// @notice last TWAP update time
 	uint32 public blockTimestampLast;
@@ -292,59 +368,6 @@ contract GElasticRebaser is Ownable //, TransactionsExt
 	}
 
 /*
-	function removeUniPair(uint256 index) public onlyGov
-	{
-		if (index >= uniSyncPairs.length) return;
-		for (uint i = index; i < uniSyncPairs.length-1; i++) {
-			uniSyncPairs[i] = uniSyncPairs[i+1];
-		}
-		uniSyncPairs.length--;
-	}
-
-	function removeBalPair(uint256 index) public onlyGov
-	{
-		if (index >= balGulpPairs.length) return;
-		for (uint i = index; i < balGulpPairs.length-1; i++) {
-			balGulpPairs[i] = balGulpPairs[i+1];
-		}
-		balGulpPairs.length--;
-	}
-
-	/**
-	 * @notice Adds pairs to sync
-	 *
-	 * /
-	function addSyncPairs(address[] memory uniSyncPairs_, address[] memory balGulpPairs_) public onlyGov
-	{
-		for (uint256 i = 0; i < uniSyncPairs_.length; i++) {
-			uniSyncPairs.push(uniSyncPairs_[i]);
-		}
-
-		for (uint256 i = 0; i < balGulpPairs_.length; i++) {
-			balGulpPairs.push(balGulpPairs_[i]);
-		}
-	}
-
-	/**
-	 * @notice Uniswap synced pairs
-	 *
-	 * /
-	function getUniSyncPairs() public view returns (address[] memory)
-	{
-		address[] memory pairs = uniSyncPairs;
-		return pairs;
-	}
-
-	/**
-	 * @notice Uniswap synced pairs
-	 *
-	 * /
-	function getBalGulpPairs() public view returns (address[] memory)
-	{
-		address[] memory pairs = balGulpPairs;
-		return pairs;
-	}
-
 	/**
 	 * @notice Updates slippage factor
 	 * @param maxSlippageFactor_ the new slippage factor
@@ -651,14 +674,10 @@ contract GElasticRebaser is Ownable //, TransactionsExt
 	function afterRebase(uint256 mintAmount, uint256 offPegPerc) internal
 	{
 		// update uniswap pairs
-		for (uint256 i = 0; i < uniSyncPairs.length; i++) {
-			UniswapPair(uniSyncPairs[i]).sync();
-		}
+		// updateUniPairs();
 
 		// update balancer pairs
-		for (uint256 i = 0; i < balGulpPairs.length; i++) {
-			BAL(balGulpPairs[i]).gulp(yamAddress);
-		}
+		// updateBalPairs(yamAddress);
 
 		if (mintAmount > 0) {
 			buyReserveAndTransfer(mintAmount, offPegPerc);
