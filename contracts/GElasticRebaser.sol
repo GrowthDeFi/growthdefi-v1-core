@@ -123,12 +123,13 @@ contract GElasticRebaser is Ownable, TWAP
 	address public elasticToken;
 	address public treasury;
 
-	uint256 public rebaseMinimumInterval = DEFAULT_REBASE_MINIMUM_INTERVAL;
-	uint256 public rebaseWindowOffset = DEFAULT_REBASE_WINDOW_OFFSET;
-	uint256 public rebaseWindowLength = DEFAULT_REBASE_WINDOW_LENGTH;
 	uint256 public rebaseMaximumDeviation = DEFAULT_REBASE_MAXIMUM_DEVIATION;
 	uint256 public rebaseDampeningFactor = DEFAULT_REBASE_DAMPENING_FACTOR;
 	uint256 public rebaseTreasuryMintPercent = DEFAULT_REBASE_TREASURY_MINT_PERCENT;
+
+	uint256 rebaseMinimumInterval = DEFAULT_REBASE_MINIMUM_INTERVAL;
+	uint256 rebaseWindowOffset = DEFAULT_REBASE_WINDOW_OFFSET;
+	uint256 rebaseWindowLength = DEFAULT_REBASE_WINDOW_LENGTH;
 
 	bool public rebaseActive;
 	uint256 public lastRebaseTime;
@@ -158,6 +159,11 @@ contract GElasticRebaser is Ownable, TWAP
 	function rebaseAvailable() public view returns (bool _available)
 	{
 		return _rebaseAvailable();
+	}
+
+	function rebaseTimingParameters() external view returns (address _rebaseMinimumInterval, address _rebaseWindowOffset, address _rebaseWindowLength)
+	{
+		return (_rebaseMinimumInterval, _rebaseWindowOffset, _rebaseWindowLength);
 	}
 
 	/**
