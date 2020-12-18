@@ -204,7 +204,26 @@ contract BalancerPoolsExt is Ownable
 	}
 }
 
-contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, TransactionsExt
+contract Common
+{
+	uint256 public constant BASE = 10**18;
+
+	/// @notice Whether or not this token is first in uniswap YAM<>Reserve pair
+	bool public isToken0;
+
+	/// @notice pair for reserveToken <> YAM
+	address public trade_pair;
+
+	address public reserveToken;
+
+	/// @notice YAM token address
+	address public yamAddress;
+
+	/// @notice Reserve vault contract
+	address public reserveContract;
+}
+
+contract ReserveBuyerExt is Ownable, Common
 {
 	using SafeMath for uint256;
 
@@ -214,86 +233,7 @@ contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, Trans
 		uint256 mintToReserves;
 	}
 
-/*
-	event NewMaxSlippageFactor(uint256 oldSlippageFactor, uint256 newSlippageFactor);
-	event NewDeviationThreshold(uint256 oldDeviationThreshold, uint256 newDeviationThreshold);
-*/
-	event MintAmount(uint256 mintAmount);
-/*
-	event NewRebaseMintPercent(uint256 oldRebaseMintPerc, uint256 newRebaseMintPerc);
-	event NewReserveContract(address oldReserveContract, address newReserveContract);
-*/
-	event TreasuryIncreased(uint256 reservesAdded, uint256 yamsSold, uint256 yamsFromReserves, uint256 yamsToReserves);
-
-	/// @notice Spreads out getting to the target price
-	uint256 public rebaseLag;
-
-	/// @notice Peg target
-	uint256 public targetRate;
-
-	/// @notice Percent of rebase that goes to minting for treasury building
-	uint256 public rebaseMintPerc;
-
-	// If the current exchange rate is within this fractional distance from the target, no supply
-	// update is performed. Fixed point number--same format as the rate.
-	// (ie) abs(rate - targetRate) / targetRate < deviationThreshold, then no supply change.
-	uint256 public deviationThreshold;
-
-	/// @notice More than this much time must pass between rebase operations.
-	uint256 public minRebaseTimeIntervalSec;
-
-	/// @notice Block timestamp of last rebase operation
-	uint256 public lastRebaseTimestampSec;
-
-	/// @notice The rebase window begins this many seconds into the minRebaseTimeInterval period.
-	// For example if minRebaseTimeInterval is 24hrs, it represents the time of day in seconds.
-	uint256 public rebaseWindowOffsetSec;
-
-	/// @notice The length of the time window where a rebase operation is allowed to execute, in seconds.
-	uint256 public rebaseWindowLengthSec;
-
-	/// @notice The number of rebase cycles since inception
-	uint256 public epoch;
-
-	// rebasing is not active initially. It can be activated at T+12 hours from
-	// deployment time
-	///@notice boolean showing rebase activation status
-	bool public rebasingActive;
-
-	/// @notice delays rebasing activation to facilitate liquidity
-	uint256 public constant rebaseDelay = 12 hours;
-
-	/// @notice Time of TWAP initialization
-	uint256 public timeOfTWAPInit;
-
-	/// @notice YAM token address
-	address public yamAddress;
-
-	address public reserveToken;
-
-	/// @notice Reserves vault contract
-	address public reservesContract;
-
-	/// @notice pair for reserveToken <> YAM
-	address public trade_pair;
-
-	/// @notice pair for reserveToken <> YAM
-	address public eth_usdc_pair;
-
-	/// @notice last TWAP update time
-	uint32 public blockTimestampLast;
-
-	/// @notice last TWAP cumulative price;
-	uint256 public priceCumulativeLastYAMETH;
-
-	/// @notice last TWAP cumulative price;
-	uint256 public priceCumulativeLastETHUSDC;
-
-	/// @notice address to send part of treasury to
-	address public public_goods;
-
-	/// @notice percentage of treasury to send to public goods address
-	uint256 public public_goods_perc;
+	uint256 public constant MAX_SLIPPAGE_PARAM = 1180339 * 10**11; // max ~20% market impact
 
 	// Max slippage factor when buying reserve token. Magic number based on
 	// the fact that uniswap is a constant product. Therefore,
@@ -302,250 +242,34 @@ contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, Trans
 	/// @notice the maximum slippage factor when buying reserve token
 	uint256 public maxSlippageFactor;
 
-	/// @notice Whether or not this token is first in uniswap YAM<>Reserve pair
-	bool public isToken0;
+	/// @notice address to send part of treasury to
+	address public public_goods;
 
-	uint256 public constant BASE = 10**18;
+	/// @notice percentage of treasury to send to public goods address
+	uint256 public public_goods_perc;
 
-/*
-	uint256 public constant MAX_SLIPPAGE_PARAM = 1180339 * 10**11; // max ~20% market impact
-
-	uint256 public constant MAX_MINT_PERC_PARAM = 25 * 10**16; // max 25% of rebase can go to treasury
-*/
-
-	constructor(address yamAddress_, address reserveToken_, address factory, address reservesContract_, address public_goods_, uint256 public_goods_perc_)
+	constructor(address public_goods_, uint256 public_goods_perc_)
 		public
 	{
-		minRebaseTimeIntervalSec = 12 hours;
-		rebaseWindowOffsetSec = 28800; // 8am/8pm UTC rebases
-
-		(address token0, address token1) = sortTokens(yamAddress_, reserveToken_);
-
-		// used for interacting with uniswap
-		if (token0 == yamAddress_) {
-			isToken0 = true;
-		} else {
-			isToken0 = false;
-		}
-		// uniswap YAM<>Reserve pair
-		trade_pair = pairForSushi(factory, token0, token1);
-
-		// get eth_usdc piar
-		address USDC = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-
-		// USDC < WETH address, so USDC is token0
-		eth_usdc_pair = pairForSushi(factory, USDC, reserveToken_);
-
-		// Reserves contract is mutable
-		reservesContract = reservesContract_;
-
-		// Reserve token is not mutable. Must deploy a new rebaser to update it
-		reserveToken = reserveToken_;
-
-		yamAddress = yamAddress_;
-
-		public_goods = public_goods_;
-		public_goods_perc = public_goods_perc_;
-
 		// target 5% slippage
 		// ~2.6%
 		maxSlippageFactor = 2597836 * 10**10; //5409258 * 10**10;
 
-		// $1
-		targetRate = BASE;
-
-		// twice daily rebase, with targeting reaching peg in 10 days
-		rebaseLag = 20;
-
-		// 10%
-		rebaseMintPerc = 10**17;
-
-		// 5%
-		deviationThreshold = 5 * 10**16;
-
-		// 60 minutes
-		rebaseWindowLengthSec = 60 * 60;
+		public_goods = public_goods_;
+		public_goods_perc = public_goods_perc_;
 	}
 
-/*
 	/**
 	 * @notice Updates slippage factor
 	 * @param maxSlippageFactor_ the new slippage factor
 	 *
-	 * /
-	function setMaxSlippageFactor(uint256 maxSlippageFactor_) public onlyGov
+	 */
+	function setMaxSlippageFactor(uint256 maxSlippageFactor_) public onlyOwner
 	{
 		require(maxSlippageFactor_ < MAX_SLIPPAGE_PARAM);
 		uint256 oldSlippageFactor = maxSlippageFactor;
 		maxSlippageFactor = maxSlippageFactor_;
 		emit NewMaxSlippageFactor(oldSlippageFactor, maxSlippageFactor_);
-	}
-
-	/**
-	 * @notice Updates rebase mint percentage
-	 * @param rebaseMintPerc_ the new rebase mint percentage
-	 *
-	 * /
-	function setRebaseMintPerc(uint256 rebaseMintPerc_) public onlyGov
-	{
-		require(rebaseMintPerc_ < MAX_MINT_PERC_PARAM);
-		uint256 oldPerc = rebaseMintPerc;
-		rebaseMintPerc = rebaseMintPerc_;
-		emit NewRebaseMintPercent(oldPerc, rebaseMintPerc_);
-	}
-
-	/**
-	 * @notice Updates reserve contract
-	 * @param reservesContract_ the new reserve contract
-	 *
-	 * /
-	function setReserveContract(address reservesContract_) public onlyGov
-	{
-		address oldReservesContract = reservesContract;
-		reservesContract = reservesContract_;
-		emit NewReserveContract(oldReservesContract, reservesContract_);
-	}
-*/
-
-	/**
-	 * @notice Initializes TWAP start point, starts countdown to first rebase
-	 *
-	 */
-	function init_twap() public
-	{
-		require(timeOfTWAPInit == 0, "already activated");
-		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
-		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
-		(,uint priceCumulativeUSDC,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
-
-		require(blockTimestamp > 0, "no trades");
-		blockTimestampLast = blockTimestamp;
-		priceCumulativeLastYAMETH = priceCumulative;
-		priceCumulativeLastETHUSDC = priceCumulativeUSDC;
-		timeOfTWAPInit = blockTimestamp;
-	}
-
-	/**
-	 * @notice Activates rebasing
-	 * @dev One way function, cannot be undone, callable by anyone
-	 */
-	function activate_rebasing() public
-	{
-		require(timeOfTWAPInit > 0, "twap wasnt intitiated, call init_twap()");
-		// cannot enable prior to end of rebaseDelay
-		require(now >= timeOfTWAPInit + rebaseDelay, "!end_delay");
-
-		rebasingActive = true;
-	}
-
-	/**
-	 * @notice Initiates a new rebase operation, provided the minimum time period has elapsed.
-	 *
-	 * @dev The supply adjustment equals (_totalSupply * DeviationFromTargetRate) / rebaseLag
-	 *      Where DeviationFromTargetRate is (MarketOracleRate - targetRate) / targetRate
-	 *      and targetRate is 1e18
-	 */
-	function rebase() public
-	{
-		// EOA only or gov
-		require(msg.sender == tx.origin, "!EOA");
-		// ensure rebasing at correct time
-		_inRebaseWindow();
-
-		// This comparison also ensures there is no reentrancy.
-		require(lastRebaseTimestampSec.add(minRebaseTimeIntervalSec) < now);
-
-		// Snap the rebase time to the start of this window.
-		lastRebaseTimestampSec = now.sub(now.mod(minRebaseTimeIntervalSec)).add(rebaseWindowOffsetSec);
-
-		epoch = epoch.add(1);
-
-		// get twap from uniswap v2;
-		uint256 exchangeRate = getTWAP();
-
-		// calculates % change to supply
-		(uint256 offPegPerc, bool positive) = computeOffPegPerc(exchangeRate);
-
-		uint256 indexDelta = offPegPerc;
-
-		// Apply the Dampening factor.
-		indexDelta = indexDelta.div(rebaseLag);
-
-		GElasticToken yam = GElasticToken(yamAddress);
-
-		if (positive) {
-			require(yam.scalingFactor().mul(BASE.add(indexDelta)).div(BASE) < yam.maxScalingFactor(), "new scaling factor will be too big");
-		}
-
-		uint256 currSupply = yam.totalSupply();
-		uint256 mintAmount;
-
-		// reduce indexDelta to account for minting
-		if (positive) {
-			uint256 mintPerc = indexDelta.mul(rebaseMintPerc).div(BASE);
-			indexDelta = indexDelta.sub(mintPerc);
-			mintAmount = currSupply.mul(mintPerc).div(BASE);
-		}
-
-		// rebase
-		// ignore returned var
-		yam.rebase(epoch, indexDelta, positive);
-
-		// perform actions after rebase
-		emit MintAmount(mintAmount);
-		afterRebase(mintAmount, offPegPerc);
-	}
-
-	function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes memory data) public
-	{
-		// enforce that it is coming from uniswap
-		require(msg.sender == trade_pair, "bad msg.sender");
-		// enforce that this contract called uniswap
-		require(sender == address(this), "bad origin");
-		(UniVars memory uniVars) = abi.decode(data, (UniVars));
-
-		GElasticToken yam = GElasticToken(yamAddress);
-
-		if (uniVars.amountFromReserves > 0) {
-			// transfer from reserves and mint to uniswap
-			yam.transferFrom(reservesContract, trade_pair, uniVars.amountFromReserves);
-			if (uniVars.amountFromReserves < uniVars.yamsToUni) {
-				// if the amount from reserves > yamsToUni, we have fully paid for the yCRV tokens
-				// thus this number would be 0 so no need to mint
-				yam.mint(trade_pair, uniVars.yamsToUni.sub(uniVars.amountFromReserves));
-			}
-		} else {
-			// mint to uniswap
-			yam.mint(trade_pair, uniVars.yamsToUni);
-		}
-
-		// mint unsold to mintAmount
-		if (uniVars.mintToReserves > 0) {
-			yam.mint(reservesContract, uniVars.mintToReserves);
-		}
-
-		// transfer reserve token to reserves
-		if (isToken0) {
-			if (public_goods != address(0) && public_goods_perc > 0) {
-				uint256 amount_to_public_goods = amount1.mul(public_goods_perc).div(BASE);
-				SafeERC20.safeTransfer(IERC20(reserveToken), reservesContract, amount1.sub(amount_to_public_goods));
-				SafeERC20.safeTransfer(IERC20(reserveToken), public_goods, amount_to_public_goods);
-				emit TreasuryIncreased(amount1.sub(amount_to_public_goods), uniVars.yamsToUni, uniVars.amountFromReserves, uniVars.mintToReserves);
-			} else {
-				SafeERC20.safeTransfer(IERC20(reserveToken), reservesContract, amount1);
-				emit TreasuryIncreased(amount1, uniVars.yamsToUni, uniVars.amountFromReserves, uniVars.mintToReserves);
-			}
-		} else {
-			if (public_goods != address(0) && public_goods_perc > 0) {
-				uint256 amount_to_public_goods = amount0.mul(public_goods_perc).div(BASE);
-				SafeERC20.safeTransfer(IERC20(reserveToken), reservesContract, amount0.sub(amount_to_public_goods));
-				SafeERC20.safeTransfer(IERC20(reserveToken), public_goods, amount_to_public_goods);
-				emit TreasuryIncreased(amount0.sub(amount_to_public_goods), uniVars.yamsToUni, uniVars.amountFromReserves, uniVars.mintToReserves);
-			} else {
-				SafeERC20.safeTransfer(IERC20(reserveToken), reservesContract, amount0);
-				emit TreasuryIncreased(amount0, uniVars.yamsToUni, uniVars.amountFromReserves, uniVars.mintToReserves);
-			}
-		}
 	}
 
 	function buyReserveAndTransfer(uint256 mintAmount, uint256 offPegPerc) internal
@@ -558,7 +282,7 @@ contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, Trans
 		(uint256 token0Reserves, uint256 token1Reserves,) = pair.getReserves();
 
 		// check if protocol has excess yam in the reserve
-		uint256 excess = yam.balanceOf(reservesContract);
+		uint256 excess = yam.balanceOf(reserveContract);
 
 		uint256 tokens_to_max_slippage = uniswapMaxSlippage(token0Reserves, token1Reserves, offPegPerc);
 
@@ -654,6 +378,58 @@ contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, Trans
 		}
 	}
 
+	function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes memory data) public
+	{
+		// enforce that it is coming from uniswap
+		require(msg.sender == trade_pair, "bad msg.sender");
+		// enforce that this contract called uniswap
+		require(sender == address(this), "bad origin");
+		(UniVars memory uniVars) = abi.decode(data, (UniVars));
+
+		GElasticToken yam = GElasticToken(yamAddress);
+
+		if (uniVars.amountFromReserves > 0) {
+			// transfer from reserves and mint to uniswap
+			yam.transferFrom(reserveContract, trade_pair, uniVars.amountFromReserves);
+			if (uniVars.amountFromReserves < uniVars.yamsToUni) {
+				// if the amount from reserves > yamsToUni, we have fully paid for the yCRV tokens
+				// thus this number would be 0 so no need to mint
+				yam.mint(trade_pair, uniVars.yamsToUni.sub(uniVars.amountFromReserves));
+			}
+		} else {
+			// mint to uniswap
+			yam.mint(trade_pair, uniVars.yamsToUni);
+		}
+
+		// mint unsold to mintAmount
+		if (uniVars.mintToReserves > 0) {
+			yam.mint(reserveContract, uniVars.mintToReserves);
+		}
+
+		// transfer reserve token to reserves
+		if (isToken0) {
+			if (public_goods != address(0) && public_goods_perc > 0) {
+				uint256 amount_to_public_goods = amount1.mul(public_goods_perc).div(BASE);
+				SafeERC20.safeTransfer(IERC20(reserveToken), reserveContract, amount1.sub(amount_to_public_goods));
+				SafeERC20.safeTransfer(IERC20(reserveToken), public_goods, amount_to_public_goods);
+				emit TreasuryIncreased(amount1.sub(amount_to_public_goods), uniVars.yamsToUni, uniVars.amountFromReserves, uniVars.mintToReserves);
+			} else {
+				SafeERC20.safeTransfer(IERC20(reserveToken), reserveContract, amount1);
+				emit TreasuryIncreased(amount1, uniVars.yamsToUni, uniVars.amountFromReserves, uniVars.mintToReserves);
+			}
+		} else {
+			if (public_goods != address(0) && public_goods_perc > 0) {
+				uint256 amount_to_public_goods = amount0.mul(public_goods_perc).div(BASE);
+				SafeERC20.safeTransfer(IERC20(reserveToken), reserveContract, amount0.sub(amount_to_public_goods));
+				SafeERC20.safeTransfer(IERC20(reserveToken), public_goods, amount_to_public_goods);
+				emit TreasuryIncreased(amount0.sub(amount_to_public_goods), uniVars.yamsToUni, uniVars.amountFromReserves, uniVars.mintToReserves);
+			} else {
+				SafeERC20.safeTransfer(IERC20(reserveToken), reserveContract, amount0);
+				emit TreasuryIncreased(amount0, uniVars.yamsToUni, uniVars.amountFromReserves, uniVars.mintToReserves);
+			}
+		}
+	}
+
 	/**
 	 * @notice given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
 	 *
@@ -671,20 +447,85 @@ contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, Trans
 		amountOut = numerator / denominator;
 	}
 
-	function afterRebase(uint256 mintAmount, uint256 offPegPerc) internal
+	event NewMaxSlippageFactor(uint256 oldSlippageFactor, uint256 newSlippageFactor);
+	event TreasuryIncreased(uint256 reservesAdded, uint256 yamsSold, uint256 yamsFromReserves, uint256 yamsToReserves);
+}
+
+contract TWAPExt is Common
+{
+	using SafeMath for uint256;
+
+	/// @notice pair for reserveToken <> YAM
+	address public eth_usdc_pair;
+
+	/// @notice last TWAP update time
+	uint32 public blockTimestampLast;
+
+	/// @notice last TWAP cumulative price;
+	uint256 public priceCumulativeLastYAMETH;
+
+	/// @notice last TWAP cumulative price;
+	uint256 public priceCumulativeLastETHUSDC;
+
+	/// @notice Time of TWAP initialization
+	uint256 public timeOfTWAPInit;
+
+	/**
+	 * @notice Initializes TWAP start point, starts countdown to first rebase
+	 *
+	 */
+	function init_twap() public
 	{
-		// update uniswap pairs
-		// updateUniPairs();
+		require(timeOfTWAPInit == 0, "already activated");
+		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
+		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
+		(,uint priceCumulativeUSDC,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
 
-		// update balancer pairs
-		// updateBalPairs(yamAddress);
+		require(blockTimestamp > 0, "no trades");
+		blockTimestampLast = blockTimestamp;
+		priceCumulativeLastYAMETH = priceCumulative;
+		priceCumulativeLastETHUSDC = priceCumulativeUSDC;
+		timeOfTWAPInit = blockTimestamp;
+	}
 
-		if (mintAmount > 0) {
-			buyReserveAndTransfer(mintAmount, offPegPerc);
+	/**
+	 * @notice Calculates current TWAP from uniswap
+	 */
+	function getCurrentTWAP() public view returns (uint256)
+	{
+		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
+		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
+		(,uint priceCumulativeETH,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
+
+		uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+
+		// no period check as is done in isRebaseWindow
+
+		uint256 priceAverageYAMETH = uint256(uint224((priceCumulative - priceCumulativeLastYAMETH) / timeElapsed));
+		uint256 priceAverageETHUSDC = uint256(uint224((priceCumulativeETH - priceCumulativeLastETHUSDC) / timeElapsed));
+
+		// BASE is on order of 1e18, which takes 2^60 bits
+		// multiplication will revert if priceAverage > 2^196
+		// (which it can because it overflows intentially)
+		uint256 YAMETHprice;
+		uint256 ETHprice;
+		if (priceAverageYAMETH > uint192(-1)) {
+			// eat loss of precision
+			// effectively: (x / 2**112) * 1e18
+			YAMETHprice = (priceAverageYAMETH >> 112) * BASE;
+		} else {
+			// cant overflow
+			// effectively: (x * 1e18 / 2**112)
+			YAMETHprice = (priceAverageYAMETH * BASE) >> 112;
 		}
 
-		// call any extra functions
-		// executeTransactions();
+		if (priceAverageETHUSDC > uint192(-1)) {
+			ETHprice = (priceAverageETHUSDC >> 112) * BASE;
+		} else {
+			ETHprice = (priceAverageETHUSDC * BASE) >> 112;
+		}
+
+		return YAMETHprice.mul(ETHprice).div(10**6);
 	}
 
 	/**
@@ -735,61 +576,107 @@ contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, Trans
 
 		return YAMETHprice.mul(ETHprice).div(10**6);
 	}
+}
 
-/*
-	/**
-	 * @notice Calculates current TWAP from uniswap
-	 *
-	 * /
-	function getCurrentTWAP() public view returns (uint256)
+contract GElasticRebaser is Ownable, TWAPExt, ReserveBuyerExt //, UniswapPoolsExt, BalancerPoolsExt, TransactionsExt
+{
+	using SafeMath for uint256;
+
+	uint256 public constant MAX_MINT_PERC_PARAM = 25 * 10**16; // max 25% of rebase can go to treasury
+
+	/// @notice Spreads out getting to the target price
+	uint256 public rebaseLag = 20; // twice daily rebase, with targeting reaching peg in 10 days
+
+	/// @notice Peg target
+	uint256 public targetRate = BASE; // $1
+
+	/// @notice Percent of rebase that goes to minting for treasury building
+	uint256 public rebaseMintPerc = 10e16; // 10%
+
+	// If the current exchange rate is within this fractional distance from the target, no supply
+	// update is performed. Fixed point number--same format as the rate.
+	// (ie) abs(rate - targetRate) / targetRate < deviationThreshold, then no supply change.
+	uint256 public deviationThreshold = 5e16; // 5%
+
+	/// @notice More than this much time must pass between rebase operations.
+	uint256 public minRebaseTimeIntervalSec = 12 hours;
+
+	/// @notice The rebase window begins this many seconds into the minRebaseTimeInterval period.
+	// For example if minRebaseTimeInterval is 24hrs, it represents the time of day in seconds.
+	uint256 public rebaseWindowOffsetSec = 28800; // 8am/8pm UTC rebases
+
+	/// @notice The length of the time window where a rebase operation is allowed to execute, in seconds.
+	uint256 public rebaseWindowLengthSec = 60 * 60; // 60 minutes
+
+	/// @notice delays rebasing activation to facilitate liquidity
+	uint256 public constant rebaseDelay = 12 hours;
+
+	// rebasing is not active initially. It can be activated at T+12 hours from
+	// deployment time
+	///@notice boolean showing rebase activation status
+	bool public rebasingActive;
+
+	/// @notice Block timestamp of last rebase operation
+	uint256 public lastRebaseTimestampSec;
+
+	/// @notice The number of rebase cycles since inception
+	uint256 public epoch;
+
+	constructor(address _yamAddress, address _reserveToken, address _reserveContract, address public_goods_, uint256 public_goods_perc_, address _factory)
+		ReserveBuyerExt(public_goods_, public_goods_perc_) public
 	{
-		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
-		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
-		(,uint priceCumulativeETH,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
+		yamAddress = _yamAddress;
 
-		uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+		// Reserve token is not mutable. Must deploy a new rebaser to update it
+		reserveToken = _reserveToken;
 
-		// no period check as is done in isRebaseWindow
+		// Reserves contract is mutable
+		reserveContract = _reserveContract;
 
-		uint256 priceAverageYAMETH = uint256(uint224((priceCumulative - priceCumulativeLastYAMETH) / timeElapsed));
-		uint256 priceAverageETHUSDC = uint256(uint224((priceCumulativeETH - priceCumulativeLastETHUSDC) / timeElapsed));
+		// used for interacting with uniswap
+		// uniswap YAM<>Reserve pair
+		(address _token0, address _token1) = sortTokens(_yamAddress, _reserveToken);
+		isToken0 = _token0 == _yamAddress;
+		trade_pair = pairForSushi(_factory, _token0, _token1);
 
-		// BASE is on order of 1e18, which takes 2^60 bits
-		// multiplication will revert if priceAverage > 2^196
-		// (which it can because it overflows intentially)
-		uint256 YAMETHprice;
-		uint256 ETHprice;
-		if (priceAverageYAMETH > uint192(-1)) {
-			// eat loss of precision
-			// effectively: (x / 2**112) * 1e18
-			YAMETHprice = (priceAverageYAMETH >> 112) * BASE;
-		} else {
-			// cant overflow
-			// effectively: (x * 1e18 / 2**112)
-			YAMETHprice = (priceAverageYAMETH * BASE) >> 112;
-		}
-
-		if (priceAverageETHUSDC > uint192(-1)) {
-			ETHprice = (priceAverageETHUSDC >> 112) * BASE;
-		} else {
-			ETHprice = (priceAverageETHUSDC * BASE) >> 112;
-		}
-
-		return YAMETHprice.mul(ETHprice).div(10**6);
+		// get eth_usdc pair
+		// USDC < WETH address, so USDC is token0
+		address USDC = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+		eth_usdc_pair = pairForSushi(_factory, USDC, _reserveToken);
 	}
 
 	/**
-	 * @notice Sets the deviation threshold fraction. If the exchange rate given by the market
-	 *         oracle is within this fractional distance from the targetRate, then no supply
-	 *         modifications are made.
-	 * @param deviationThreshold_ The new exchange rate threshold fraction.
-	 * /
-	function setDeviationThreshold(uint256 deviationThreshold_) external onlyGov
+	 * @notice Activates rebasing
+	 * @dev One way function, cannot be undone, callable by anyone
+	 */
+	function activateRebasing() public
 	{
-		require(deviationThreshold > 0);
-		uint256 oldDeviationThreshold = deviationThreshold;
-		deviationThreshold = deviationThreshold_;
-		emit NewDeviationThreshold(oldDeviationThreshold, deviationThreshold_);
+		require(timeOfTWAPInit > 0, "twap wasnt intitiated, call init_twap()");
+		// cannot enable prior to end of rebaseDelay
+		require(now >= timeOfTWAPInit + rebaseDelay, "!end_delay");
+		rebasingActive = true;
+	}
+
+	/**
+	 * @return _inWindow If the latest block timestamp is within the rebase time window it, returns true.
+	 *                   Otherwise, returns false.
+	 */
+	function inRebaseWindow() public view returns (bool _inWindow)
+	{
+		// rebasing is delayed until there is a liquid market
+		_inRebaseWindow();
+		return true;
+	}
+
+	/**
+	 * @notice Updates reserve contract
+	 * @param _newReserveContract the new reserve contract
+	 */
+	function setReserveContract(address _newReserveContract) public onlyOwner
+	{
+		address _oldReserveContract = reserveContract;
+		reserveContract = _newReserveContract;
+		emit NewReserveContract(_oldReserveContract, _newReserveContract);
 	}
 
 	/**
@@ -798,96 +685,190 @@ contract GElasticRebaser is Ownable //, UniswapPoolsExt, BalancerPoolsExt, Trans
 	 * If the rebase lag R, equals 1, the smallest value for R, then the full supply
 	 * correction is applied on each rebase cycle.
 	 * If it is greater than 1, then a correction of 1/R of is applied on each rebase.
-	 * @param rebaseLag_ The new rebase lag parameter.
-	 * /
-	function setRebaseLag(uint256 rebaseLag_) external onlyGov
+	 * @param _rebaseLag The new rebase lag parameter.
+	 */
+	function setRebaseLag(uint256 _rebaseLag) external onlyOwner
 	{
-		require(rebaseLag_ > 0);
-		rebaseLag = rebaseLag_;
+		require(_rebaseLag > 0);
+		rebaseLag = _rebaseLag;
 	}
 
 	/**
 	 * @notice Sets the targetRate parameter.
-	 * @param targetRate_ The new target rate parameter.
-	 * /
-	function setTargetRate(uint256 targetRate_) external onlyGov
+	 * @param _targetRate The new target rate parameter.
+	 */
+	function setTargetRate(uint256 _targetRate) external onlyOwner
 	{
-		require(targetRate_ > 0);
-		targetRate = targetRate_;
+		require(_targetRate > 0);
+		targetRate = _targetRate;
 	}
 
 	/**
-	* @notice Sets the parameters which control the timing and frequency of
-	*         rebase operations.
-	*         a) the minimum time period that must elapse between rebase cycles.
-	*         b) the rebase window offset parameter.
-	*         c) the rebase window length parameter.
-	* @param minRebaseTimeIntervalSec_ More than this much time must pass between rebase
-	*        operations, in seconds.
-	* @param rebaseWindowOffsetSec_ The number of seconds from the beginning of
-	the rebase interval, where the rebase window begins.
-	* @param rebaseWindowLengthSec_ The length of the rebase window in seconds.
-	* /
-	function setRebaseTimingParameters(uint256 minRebaseTimeIntervalSec_, uint256 rebaseWindowOffsetSec_, uint256 rebaseWindowLengthSec_) external onlyGov
+	 * @notice Updates rebase mint percentage
+	 * @param _newRebaseMintPerc the new rebase mint percentage
+	 */
+	function setRebaseMintPerc(uint256 _newRebaseMintPerc) public onlyOwner
 	{
-		require(minRebaseTimeIntervalSec_ > 0);
-		require(rebaseWindowOffsetSec_ < minRebaseTimeIntervalSec_);
-		require(rebaseWindowOffsetSec_ + rebaseWindowLengthSec_ < minRebaseTimeIntervalSec_);
-		minRebaseTimeIntervalSec = minRebaseTimeIntervalSec_;
-		rebaseWindowOffsetSec = rebaseWindowOffsetSec_;
-		rebaseWindowLengthSec = rebaseWindowLengthSec_;
+		require(_newRebaseMintPerc < MAX_MINT_PERC_PARAM);
+		uint256 _oldRebaseMintPerc = rebaseMintPerc;
+		rebaseMintPerc = _newRebaseMintPerc;
+		emit NewRebaseMintPercent(_oldRebaseMintPerc, _newRebaseMintPerc);
 	}
 
 	/**
-	 * @return If the latest block timestamp is within the rebase time window it, returns true.
-	 *         Otherwise, returns false.
-	 * /
-	function inRebaseWindow() public view returns (bool)
+	 * @notice Sets the deviation threshold fraction. If the exchange rate given by the market
+	 *         oracle is within this fractional distance from the targetRate, then no supply
+	 *         modifications are made.
+	 * @param _newDeviationThreshold The new exchange rate threshold fraction.
+	 */
+	function setDeviationThreshold(uint256 _newDeviationThreshold) external onlyOwner
 	{
-		// rebasing is delayed until there is a liquid market
+		require(_newDeviationThreshold > 0);
+		uint256 _oldDeviationThreshold = deviationThreshold;
+		deviationThreshold = _newDeviationThreshold;
+		emit NewDeviationThreshold(_oldDeviationThreshold, _newDeviationThreshold);
+	}
+
+	/**
+	 * @notice Sets the parameters which control the timing and frequency of
+	 *         rebase operations.
+	 *         a) the minimum time period that must elapse between rebase cycles.
+	 *         b) the rebase window offset parameter.
+	 *         c) the rebase window length parameter.
+	 * @param _minRebaseTimeIntervalSec More than this much time must pass between rebase
+	 *        operations, in seconds.
+	 * @param _rebaseWindowOffsetSec The number of seconds from the beginning of
+	 *        the rebase interval, where the rebase window begins.
+	 * @param _rebaseWindowLengthSec The length of the rebase window in seconds.
+	 */
+	function setRebaseTimingParameters(uint256 _minRebaseTimeIntervalSec, uint256 _rebaseWindowOffsetSec, uint256 _rebaseWindowLengthSec) external onlyOwner
+	{
+		require(_minRebaseTimeIntervalSec > 0);
+		require(_rebaseWindowOffsetSec < _minRebaseTimeIntervalSec);
+		require(_rebaseWindowOffsetSec + _rebaseWindowLengthSec < _minRebaseTimeIntervalSec);
+		minRebaseTimeIntervalSec = _minRebaseTimeIntervalSec;
+		rebaseWindowOffsetSec = _rebaseWindowOffsetSec;
+		rebaseWindowLengthSec = _rebaseWindowLengthSec;
+	}
+
+	/**
+	 * @notice Initiates a new rebase operation, provided the minimum time period has elapsed.
+	 *
+	 * @dev The supply adjustment equals (_totalSupply * DeviationFromTargetRate) / rebaseLag
+	 *      Where DeviationFromTargetRate is (MarketOracleRate - targetRate) / targetRate
+	 *      and targetRate is 1e18
+	 */
+	function rebase() public
+	{
+		// EOA only or gov
+		require(msg.sender == tx.origin, "!EOA");
+
+		// ensure rebasing at correct time
 		_inRebaseWindow();
-		return true;
+
+		// This comparison also ensures there is no reentrancy.
+		require(lastRebaseTimestampSec.add(minRebaseTimeIntervalSec) < now);
+
+		// Snap the rebase time to the start of this window.
+		lastRebaseTimestampSec = now.sub(now.mod(minRebaseTimeIntervalSec)).add(rebaseWindowOffsetSec);
+
+		epoch = epoch.add(1);
+
+		// get twap from uniswap v2;
+		uint256 _exchangeRate = getTWAP();
+
+		// calculates % change to supply
+		(uint256 _offPegPerc, bool _positive) = _computeOffPegPerc(_exchangeRate);
+
+		uint256 _indexDelta = _offPegPerc;
+
+		// Apply the Dampening factor.
+		_indexDelta = _indexDelta.div(rebaseLag);
+
+		GElasticToken _yam = GElasticToken(yamAddress);
+
+		if (_positive) {
+			require(_yam.scalingFactor().mul(BASE.add(_indexDelta)).div(BASE) < _yam.maxScalingFactor(), "new scaling factor will be too big");
+		}
+
+		uint256 _currSupply = _yam.totalSupply();
+		uint256 _mintAmount;
+
+		// reduce indexDelta to account for minting
+		if (_positive) {
+			uint256 _mintPerc = _indexDelta.mul(rebaseMintPerc).div(BASE);
+			_indexDelta = _indexDelta.sub(_mintPerc);
+			_mintAmount = _currSupply.mul(_mintPerc).div(BASE);
+		}
+
+		// rebase
+		// ignore returned var
+		_yam.rebase(epoch, _indexDelta, _positive);
+
+		// perform actions after rebase
+		emit MintAmount(_mintAmount);
+		_afterRebase(_mintAmount, _offPegPerc);
 	}
-*/
 
 	function _inRebaseWindow() internal view
 	{
 		// rebasing is delayed until there is a liquid market
 		require(rebasingActive, "rebasing not active");
-
 		require(now.mod(minRebaseTimeIntervalSec) >= rebaseWindowOffsetSec, "too early");
 		require(now.mod(minRebaseTimeIntervalSec) < (rebaseWindowOffsetSec.add(rebaseWindowLengthSec)), "too late");
 	}
 
-	/**
-	 * @return Computes in % how far off market is from peg
-	 */
-	function computeOffPegPerc(uint256 rate) private view returns (uint256, bool)
+	function _afterRebase(uint256 _mintAmount, uint256 _offPegPerc) internal
 	{
-		if (withinDeviationThreshold(rate)) {
-			return (0, false);
-		}
+		// update uniswap pairs
+		// updateUniPairs();
+
+		// update balancer pairs
+		// updateBalPairs(yamAddress);
+
+		if (_mintAmount > 0) buyReserveAndTransfer(_mintAmount, _offPegPerc);
+
+		// call any extra functions
+		// executeTransactions();
+	}
+
+	/**
+	 * @param _rate The current exchange rate, an 18 decimal fixed point number.
+	 * @return _offPegPerc Computes in % how far off market is from peg
+	 * @return _positive Computes in % how far off market is from peg
+	 */
+	function _computeOffPegPerc(uint256 _rate) internal view returns (uint256 _offPegPerc, bool _positive)
+	{
+		if (_withinDeviationThreshold(_rate)) return (0, false);
 
 		// indexDelta =  (rate - targetRate) / targetRate
-		if (rate > targetRate) {
-			return (rate.sub(targetRate).mul(BASE).div(targetRate), true);
+		if (_rate > targetRate) {
+			return (_rate.sub(targetRate).mul(BASE).div(targetRate), true);
 		} else {
-			return (targetRate.sub(rate).mul(BASE).div(targetRate), false);
+			return (targetRate.sub(_rate).mul(BASE).div(targetRate), false);
 		}
 	}
 
 	/**
-	 * @param rate The current exchange rate, an 18 decimal fixed point number.
-	 * @return If the rate is within the deviation threshold from the target rate, returns true.
-	 *         Otherwise, returns false.
+	 * @param _rate The current exchange rate, an 18 decimal fixed point number.
+	 * @return _withinDeviation If the rate is within the deviation threshold from the target rate, returns true.
+	 *                          Otherwise, returns false.
 	 */
-	function withinDeviationThreshold(uint256 rate) private view returns (bool)
+	function _withinDeviationThreshold(uint256 _rate) internal view returns (bool _withinDeviation)
 	{
-		uint256 absoluteDeviationThreshold = targetRate.mul(deviationThreshold).div(10 ** 18);
+		uint256 _absoluteDeviationThreshold = targetRate.mul(deviationThreshold).div(1e18);
 		return
-			(rate >= targetRate && rate.sub(targetRate) < absoluteDeviationThreshold) ||
-			(rate < targetRate && targetRate.sub(rate) < absoluteDeviationThreshold);
+			(_rate >= targetRate && _rate.sub(targetRate) < _absoluteDeviationThreshold)
+			||
+			(_rate < targetRate && targetRate.sub(_rate) < _absoluteDeviationThreshold);
 	}
+
+	event NewReserveContract(address _oldReserveContract, address _newReserveContract);
+	event NewRebaseMintPercent(uint256 _oldRebaseMintPerc, uint256 _newRebaseMintPerc);
+	event NewDeviationThreshold(uint256 _oldDeviationThreshold, uint256 _newDeviationThreshold);
+	event MintAmount(uint256 _mintAmount);
+
+	// move code below elsewhere
 
 /*
 	// calculates the CREATE2 address for a pair without making any external calls
