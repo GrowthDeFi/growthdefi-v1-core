@@ -11,58 +11,50 @@ import { UniswapV2OracleLibrary } from "@uniswap/v2-periphery/contracts/librarie
 
 import { GElasticToken } from "./GElasticToken.sol";
 
-contract TWAPExt
+contract TWAP
 {
 	using SafeMath for uint256;
 
-	bool public isToken0;
-	address public trade_pair;
-	address public eth_usdc_pair;
+	bool private immutable use0;
+	address public immutable pair;
 
 	uint256 public timeOfTWAPInit;
-	uint256 public priceCumulativeLastYAMETH;
-	uint256 public priceCumulativeLastETHUSDC;
-	uint32 public blockTimestampLast;
+	uint256 public lastCumulativePrice;
+	uint32 public lastBlockTimestamp;
 
-	constructor(address _elasticToken, address _factory, address _reserveToken)
+	constructor(address _factory, address _baseToken, address _quoteToken)
 		public
 	{
-		// used for interacting with uniswap
-		// uniswap YAM<>Reserve pair
-		(address _token0, address _token1) = sortTokens(_elasticToken, _reserveToken);
-		isToken0 = _token0 == _elasticToken;
-		trade_pair = pairFor(_factory, _token0, _token1);
-
-		// get eth_usdc pair
-		// USDC < WETH address, so USDC is token0
-		address USDC = address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-		eth_usdc_pair = pairFor(_factory, USDC, _reserveToken);
+		(address _token0, address _token1) = sortTokens(_baseToken, _quoteToken);
+		use0 = _token0 == _baseToken;
+		pair = pairFor(_factory, _token0, _token1);
 	}
 
 	/**
 	 * @notice Initializes TWAP start point, starts countdown to first rebase
 	 */
-	function initTWAP() public
+	function activateTWAP() public
 	{
-		require(timeOfTWAPInit == 0, "already activated");
-		(uint256 _price0Cumulative, uint256 _price1Cumulative, uint32 _blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
-		uint256 _priceCumulative = isToken0 ? _price0Cumulative : _price1Cumulative;
-		(,uint256 _priceCumulativeUSDC,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
-
-		require(_blockTimestamp > 0, "no trades");
-		timeOfTWAPInit = _blockTimestamp;
-		priceCumulativeLastYAMETH = _priceCumulative;
-		priceCumulativeLastETHUSDC = _priceCumulativeUSDC;
-		blockTimestampLast = _blockTimestamp;
+		require(timeOfTWAPInit == 0, "already activate");
+		(lastCumulativePrice, lastBlockTimestamp) = _currentCumulativePrice();
+		require(lastBlockTimestamp > 0, "no trades");
+		timeOfTWAPInit = lastBlockTimestamp;
 	}
 
 	/**
 	 * @notice Calculates current TWAP from uniswap
 	 */
-	function getCurrentTWAP() public view returns (uint256 _currentTWAP)
+	function getCurrentTWAP() public view returns (uint256 _price)
 	{
-		(_currentTWAP,,,) = _getTWAP();
-		return _currentTWAP;
+		(_price,,) = _getTWAP();
+		return _price;
+	}
+
+	function _currentCumulativePrice() internal view returns (uint256 _cumulativePrice, uint32 _blockTime)
+	{
+		(uint256 _cumulativePrice0, uint256 _cumulativePrice1, uint32 _blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(pair);
+		_cumulativePrice = use0 ? _cumulativePrice0 : _cumulativePrice1;
+		return (_cumulativePrice, _blockTimestamp);
 	}
 
 	/**
@@ -73,85 +65,60 @@ contract TWAPExt
 	*      to reduce this attack vector. Additional there is very little supply
 	*      to be able to manipulate this during that time period of highest vuln.
 	*/
-	function _getTWAP() internal view returns (uint256 _TWAP, uint256 _priceCumulativeLastYAMETH, uint256 _priceCumulativeLastETHUSDC, uint32 _blockTimestampLast)
+	function _getTWAP() internal view returns (uint256 _price, uint256 _cumulativePrice, uint32 _blockTimestamp)
 	{
-		(uint256 _price0Cumulative, uint256 _price1Cumulative, uint32 _blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
-		uint256 _priceCumulative = isToken0 ? _price0Cumulative : _price1Cumulative;
-		(,uint256 _priceCumulativeETH,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
-
-		uint32 _timeElapsed = _blockTimestamp - blockTimestampLast; // overflow is desired
+		(_cumulativePrice, _blockTimestamp) = _currentCumulativePrice();
 
 		// overflow is desired
-		uint256 _priceAverageYAMETH = uint256(uint224((_priceCumulative - priceCumulativeLastYAMETH) / _timeElapsed));
-		uint256 _priceAverageETHUSDC = uint256(uint224((_priceCumulativeETH - priceCumulativeLastETHUSDC) / _timeElapsed));
-
-		// to be returned
-		_priceCumulativeLastYAMETH = _priceCumulative;
-		_priceCumulativeLastETHUSDC = _priceCumulativeETH;
-		_blockTimestampLast = _blockTimestamp;
+		uint256 _priceAverage = uint256(uint224((_cumulativePrice - lastCumulativePrice) / (_blockTimestamp - lastBlockTimestamp)));
 
 		// BASE is on order of 1e18, which takes 2^60 bits
 		// multiplication will revert if priceAverage > 2^196
-		// (which it can because it overflows intentially)
-		uint256 _YAMETHprice;
-		if (_priceAverageYAMETH > uint192(-1)) {
-			_YAMETHprice = (_priceAverageYAMETH >> 112) * 1e18;
-		} else {
-			_YAMETHprice = (_priceAverageYAMETH * 1e18) >> 112;
-		}
+		// (which it can because it overflows intentionally)
+		_price = _priceAverage > uint192(-1) ? (_priceAverage >> 112) * 1e18 : (_priceAverage * 1e18) >> 112;
 
-		uint256 _ETHprice;
-		if (_priceAverageETHUSDC > uint192(-1)) {
-			_ETHprice = (_priceAverageETHUSDC >> 112) * 1e18;
-		} else {
-			_ETHprice = (_priceAverageETHUSDC * 1e18) >> 112;
-		}
-
-		_TWAP = _YAMETHprice.mul(_ETHprice).div(1e6);
-
-		return (_TWAP, _priceCumulativeLastYAMETH, _priceCumulativeLastETHUSDC, _blockTimestampLast);
+		return (_price, _cumulativePrice, _blockTimestamp);
 	}
 
-	function _updateTWAP() internal returns (uint256 _TWAP)
+	function _updateTWAP() internal returns (uint256 _price)
 	{
-		(_TWAP, priceCumulativeLastYAMETH, priceCumulativeLastETHUSDC, blockTimestampLast) = _getTWAP();
-		return _TWAP;
+		(_price, lastCumulativePrice, lastBlockTimestamp) = _getTWAP();
+		return _price;
 	}
 
-	// move code below elsewhere
+	// TODO move code below elsewhere
 
-	// calculates the CREATE2 address for a pair without making any external calls
-	function pairFor(address factory, address token0, address token1) internal pure returns (address pair)
+	function pairFor(address _factory, address _token0, address _token1) internal pure returns (address _pair)
 	{
-		pair = address(uint(keccak256(abi.encodePacked(
-			hex'ff',
-			factory,
-			keccak256(abi.encodePacked(token0, token1)),
-			hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
+		_pair = address(uint(keccak256(abi.encodePacked(
+			hex"ff",
+			_factory,
+			keccak256(abi.encodePacked(_token0, _token1)),
+			hex"96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f"
 		))));
 	}
 
-	function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1)
+	function sortTokens(address _tokenA, address _tokenB) internal pure returns (address _token0, address _token1)
 	{
-		require(tokenA != tokenB, 'UniswapV2Library: IDENTICAL_ADDRESSES');
-		(token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-		require(token0 != address(0), 'UniswapV2Library: ZERO_ADDRESS');
+		require(_tokenA != _tokenB, "UniswapV2Library: IDENTICAL_ADDRESSES");
+		(_token0, _token1) = _tokenA < _tokenB ? (_tokenA, _tokenB) : (_tokenB, _tokenA);
+		require(_token0 != address(0), "UniswapV2Library: ZERO_ADDRESS");
 	}
 }
 
-contract GElasticRebaser is Ownable, TWAPExt
+contract GElasticRebaser is Ownable, TWAP
 {
 	using SafeMath for uint256;
 
 	uint256 constant REBASE_ACTIVATION_DELAY = 24 hours;
-	uint256 constant MAXIMUM_REBASE_MINT_TREASURY_PERCENT = 25e16; // 25%
+	uint256 constant REBASE_MAXIMUM_TREASURY_MINT_PERCENT = 25e16; // 25%
 
 	uint256 constant DEFAULT_REBASE_MINIMUM_INTERVAL = 24 hours;
 	uint256 constant DEFAULT_REBASE_WINDOW_OFFSET = 17 hours; // 5PM UTC
 	uint256 constant DEFAULT_REBASE_WINDOW_LENGTH = 1 hours;
 	uint256 constant DEFAULT_REBASE_MAXIMUM_DEVIATION = 5e16; // 5%
 	uint256 constant DEFAULT_REBASE_DAMPENING_FACTOR = 10; // 10x to reach 100%
-	uint256 constant DEFAULT_REBASE_MINT_TREASURY_PERCENT = 10e16; // 10%
+	uint256 constant DEFAULT_REBASE_TREASURY_MINT_PERCENT = 10e16; // 10%
 
 	address public elasticToken;
 	address public treasury;
@@ -161,14 +128,14 @@ contract GElasticRebaser is Ownable, TWAPExt
 	uint256 public rebaseWindowLength = DEFAULT_REBASE_WINDOW_LENGTH;
 	uint256 public rebaseMaximumDeviation = DEFAULT_REBASE_MAXIMUM_DEVIATION;
 	uint256 public rebaseDampeningFactor = DEFAULT_REBASE_DAMPENING_FACTOR;
-	uint256 public rebaseMintTreasuryPercent = DEFAULT_REBASE_MINT_TREASURY_PERCENT;
+	uint256 public rebaseTreasuryMintPercent = DEFAULT_REBASE_TREASURY_MINT_PERCENT;
 
 	bool public rebaseActive;
 	uint256 public lastRebaseTime;
 	uint256 public epoch;
 
-	constructor(address _elasticToken, address _treasury, address _factory, address _reserveToken)
-		TWAPExt(_elasticToken, _factory, _reserveToken) public
+	constructor(address _factory, address _elasticToken, address _pegToken, address _treasury)
+		TWAP(_factory, _elasticToken, _pegToken) public
 	{
 		elasticToken = _elasticToken;
 		treasury = _treasury;
@@ -178,10 +145,9 @@ contract GElasticRebaser is Ownable, TWAPExt
 	 * @notice Activates rebasing
 	 * @dev One way function, cannot be undone, callable by anyone
 	 */
-	function activateRebasing() public
+	function activateRebase() public
 	{
-		require(timeOfTWAPInit > 0, "twap wasnt intitiated, call initTWAP()");
-		require(now >= timeOfTWAPInit + REBASE_ACTIVATION_DELAY, "!end_delay");
+		require(timeOfTWAPInit > 0 && now >= timeOfTWAPInit + REBASE_ACTIVATION_DELAY, "not available");
 		rebaseActive = true;
 	}
 
@@ -200,6 +166,7 @@ contract GElasticRebaser is Ownable, TWAPExt
 	 */
 	function setTreasury(address _newTreasury) public onlyOwner
 	{
+		require(_newTreasury != address(0), "invalid treasury");
 		address _oldTreasury = treasury;
 		treasury = _newTreasury;
 		emit ChangeTreasury(_oldTreasury, _newTreasury);
@@ -213,7 +180,7 @@ contract GElasticRebaser is Ownable, TWAPExt
 	 */
 	function setRebaseMaximumDeviation(uint256 _newRebaseMaximumDeviation) external onlyOwner
 	{
-		require(_newRebaseMaximumDeviation > 0);
+		require(_newRebaseMaximumDeviation > 0, "invalid maximum deviation");
 		uint256 _oldRebaseMaximumDeviation = rebaseMaximumDeviation;
 		rebaseMaximumDeviation = _newRebaseMaximumDeviation;
 		emit ChangeRebaseMaximumDeviation(_oldRebaseMaximumDeviation, _newRebaseMaximumDeviation);
@@ -229,7 +196,7 @@ contract GElasticRebaser is Ownable, TWAPExt
 	 */
 	function setRebaseDampeningFactor(uint256 _newRebaseDampeningFactor) external onlyOwner
 	{
-		require(_newRebaseDampeningFactor > 0);
+		require(_newRebaseDampeningFactor > 0, "invalid dampening factor");
 		uint256 _oldRebaseDampeningFactor = rebaseDampeningFactor;
 		rebaseDampeningFactor = _newRebaseDampeningFactor;
 		emit ChangeRebaseDampeningFactor(_oldRebaseDampeningFactor, _newRebaseDampeningFactor);
@@ -237,14 +204,14 @@ contract GElasticRebaser is Ownable, TWAPExt
 
 	/**
 	 * @notice Updates rebase mint percentage
-	 * @param _newRebaseMintTreasuryPercent the new rebase mint percentage
+	 * @param _newRebaseTreasuryMintPercent the new rebase mint percentage
 	 */
-	function setRebaseMintTreasuryPercent(uint256 _newRebaseMintTreasuryPercent) public onlyOwner
+	function setRebaseTreasuryMintPercent(uint256 _newRebaseTreasuryMintPercent) public onlyOwner
 	{
-		require(_newRebaseMintTreasuryPercent < MAXIMUM_REBASE_MINT_TREASURY_PERCENT, "invalid percent");
-		uint256 _oldRebaseMintTreasuryPercent = rebaseMintTreasuryPercent;
-		rebaseMintTreasuryPercent = _newRebaseMintTreasuryPercent;
-		emit ChangeRebaseMintTreasuryPercent(_oldRebaseMintTreasuryPercent, _newRebaseMintTreasuryPercent);
+		require(_newRebaseTreasuryMintPercent < REBASE_MAXIMUM_TREASURY_MINT_PERCENT, "invalid percent");
+		uint256 _oldRebaseTreasuryMintPercent = rebaseTreasuryMintPercent;
+		rebaseTreasuryMintPercent = _newRebaseTreasuryMintPercent;
+		emit ChangeRebaseTreasuryMintPercent(_oldRebaseTreasuryMintPercent, _newRebaseTreasuryMintPercent);
 	}
 
 	/**
@@ -253,20 +220,23 @@ contract GElasticRebaser is Ownable, TWAPExt
 	 *         a) the minimum time period that must elapse between rebase cycles.
 	 *         b) the rebase window offset parameter.
 	 *         c) the rebase window length parameter.
-	 * @param _rebaseMinimumInterval More than this much time must pass between rebase
-	 *                               operations, in seconds.
-	 * @param _rebaseWindowOffset The number of seconds from the beginning of
-	 *                            the rebase interval, where the rebase window begins.
-	 * @param _rebaseWindowLength The length of the rebase window in seconds.
+	 * @param _newRebaseMinimumInterval More than this much time must pass between rebase
+	 *                                  operations, in seconds.
+	 * @param _newRebaseWindowOffset The number of seconds from the beginning of
+	 *                               the rebase interval, where the rebase window begins.
+	 * @param _newRebaseWindowLength The length of the rebase window in seconds.
 	 */
-	function setRebaseTimingParameters(uint256 _rebaseMinimumInterval, uint256 _rebaseWindowOffset, uint256 _rebaseWindowLength) external onlyOwner
+	function setRebaseTimingParameters(uint256 _newRebaseMinimumInterval, uint256 _newRebaseWindowOffset, uint256 _newRebaseWindowLength) external onlyOwner
 	{
-		require(_rebaseMinimumInterval > 0);
-		require(_rebaseWindowOffset < _rebaseMinimumInterval);
-		require(_rebaseWindowOffset + _rebaseWindowLength < _rebaseMinimumInterval);
-		rebaseMinimumInterval = _rebaseMinimumInterval;
-		rebaseWindowOffset = _rebaseWindowOffset;
-		rebaseWindowLength = _rebaseWindowLength;
+		require(_newRebaseMinimumInterval > 0, "invalid interval");
+		require(_newRebaseWindowOffset.add(_newRebaseWindowLength) <= _newRebaseMinimumInterval, "invalid window");
+		uint256 _oldRebaseMinimumInterval = rebaseMinimumInterval;
+		uint256 _oldRebaseWindowOffset = rebaseWindowOffset;
+		uint256 _oldRebaseWindowLength = rebaseWindowLength;
+		rebaseMinimumInterval = _newRebaseMinimumInterval;
+		rebaseWindowOffset = _newRebaseWindowOffset;
+		rebaseWindowLength = _newRebaseWindowLength;
+		emit ChangeRebaseTimingParameters(_oldRebaseMinimumInterval, _oldRebaseWindowOffset, _oldRebaseWindowLength, _newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
 	}
 
 	/**
@@ -278,8 +248,7 @@ contract GElasticRebaser is Ownable, TWAPExt
 	 */
 	function rebase() public
 	{
-		// EOA only or gov
-		require(msg.sender == tx.origin, "!EOA");
+		require(msg.sender == tx.origin, "restricted to externally owned accounts");
 
 		require(rebaseActive, "not active");
 		require(_rebaseAvailable(), "not available");
@@ -307,7 +276,7 @@ contract GElasticRebaser is Ownable, TWAPExt
 		// calculates mint amount for positive rebases
 		uint256 _mintAmount = 0;
 		if (_positive) {
-			uint256 _mintPercent = _delta.mul(rebaseMintTreasuryPercent).div(1e18);
+			uint256 _mintPercent = _delta.mul(rebaseTreasuryMintPercent).div(1e18);
 			_delta = _delta.sub(_mintPercent);
 			uint256 _totalSupply = GElasticToken(elasticToken).totalSupply();
 			_mintAmount = _totalSupply.mul(_mintPercent).div(1e18);
@@ -321,12 +290,13 @@ contract GElasticRebaser is Ownable, TWAPExt
 
 	function _rebaseAvailable() internal view returns (bool _available)
 	{
-		uint256 _offsetSec = now.mod(rebaseMinimumInterval);
-		return rebaseWindowOffset <= _offsetSec && _offsetSec < rebaseWindowOffset.add(rebaseWindowLength);
+		uint256 _offset = now.mod(rebaseMinimumInterval);
+		return rebaseWindowOffset <= _offset && _offset < rebaseWindowOffset.add(rebaseWindowLength);
 	}
 
 	event ChangeTreasury(address _oldTreasury, address _newTreasury);
 	event ChangeRebaseMaximumDeviation(uint256 _oldRebaseMaximumDeviation, uint256 _newRebaseMaximumDeviation);
 	event ChangeRebaseDampeningFactor(uint256 _oldRebaseDampeningFactor, uint256 _newRebaseDampeningFactor);
-	event ChangeRebaseMintTreasuryPercent(uint256 _oldRebaseMintTreasuryPercent, uint256 _newRebaseMintTreasuryPercent);
+	event ChangeRebaseTreasuryMintPercent(uint256 _oldRebaseTreasuryMintPercent, uint256 _newRebaseTreasuryMintPercent);
+	event ChangeRebaseTimingParameters(uint256 _oldRebaseMinimumInterval, uint256 _oldRebaseWindowOffset, uint256 _oldRebaseWindowLength, uint256 _newRebaseMinimumInterval, uint256 _newRebaseWindowOffset, uint256 _newRebaseWindowLength);
 }
