@@ -458,8 +458,8 @@ contract TWAPExt is Common
 	/// @notice pair for reserveToken <> YAM
 	address public eth_usdc_pair;
 
-	/// @notice last TWAP update time
-	uint32 public blockTimestampLast;
+	/// @notice Time of TWAP initialization
+	uint256 public timeOfTWAPInit;
 
 	/// @notice last TWAP cumulative price;
 	uint256 public priceCumulativeLastYAMETH;
@@ -467,65 +467,34 @@ contract TWAPExt is Common
 	/// @notice last TWAP cumulative price;
 	uint256 public priceCumulativeLastETHUSDC;
 
-	/// @notice Time of TWAP initialization
-	uint256 public timeOfTWAPInit;
+	/// @notice last TWAP update time
+	uint32 public blockTimestampLast;
 
 	/**
 	 * @notice Initializes TWAP start point, starts countdown to first rebase
 	 *
 	 */
-	function init_twap() public
+	function initTWAP() public
 	{
 		require(timeOfTWAPInit == 0, "already activated");
-		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
-		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
-		(,uint priceCumulativeUSDC,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
+		(uint256 _price0Cumulative, uint256 _price1Cumulative, uint32 _blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
+		uint256 _priceCumulative = isToken0 ? _price0Cumulative : _price1Cumulative;
+		(,uint256 _priceCumulativeUSDC,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
 
-		require(blockTimestamp > 0, "no trades");
-		blockTimestampLast = blockTimestamp;
-		priceCumulativeLastYAMETH = priceCumulative;
-		priceCumulativeLastETHUSDC = priceCumulativeUSDC;
-		timeOfTWAPInit = blockTimestamp;
+		require(_blockTimestamp > 0, "no trades");
+		timeOfTWAPInit = _blockTimestamp;
+		priceCumulativeLastYAMETH = _priceCumulative;
+		priceCumulativeLastETHUSDC = _priceCumulativeUSDC;
+		blockTimestampLast = _blockTimestamp;
 	}
 
 	/**
 	 * @notice Calculates current TWAP from uniswap
 	 */
-	function getCurrentTWAP() public view returns (uint256)
+	function getCurrentTWAP() public view returns (uint256 _currentTWAP)
 	{
-		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
-		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
-		(,uint priceCumulativeETH,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
-
-		uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
-
-		// no period check as is done in isRebaseWindow
-
-		uint256 priceAverageYAMETH = uint256(uint224((priceCumulative - priceCumulativeLastYAMETH) / timeElapsed));
-		uint256 priceAverageETHUSDC = uint256(uint224((priceCumulativeETH - priceCumulativeLastETHUSDC) / timeElapsed));
-
-		// BASE is on order of 1e18, which takes 2^60 bits
-		// multiplication will revert if priceAverage > 2^196
-		// (which it can because it overflows intentially)
-		uint256 YAMETHprice;
-		uint256 ETHprice;
-		if (priceAverageYAMETH > uint192(-1)) {
-			// eat loss of precision
-			// effectively: (x / 2**112) * 1e18
-			YAMETHprice = (priceAverageYAMETH >> 112) * BASE;
-		} else {
-			// cant overflow
-			// effectively: (x * 1e18 / 2**112)
-			YAMETHprice = (priceAverageYAMETH * BASE) >> 112;
-		}
-
-		if (priceAverageETHUSDC > uint192(-1)) {
-			ETHprice = (priceAverageETHUSDC >> 112) * BASE;
-		} else {
-			ETHprice = (priceAverageETHUSDC * BASE) >> 112;
-		}
-
-		return YAMETHprice.mul(ETHprice).div(10**6);
+		(_currentTWAP,,,) = _getTWAP();
+		return _currentTWAP;
 	}
 
 	/**
@@ -536,45 +505,55 @@ contract TWAPExt is Common
 	*      to reduce this attack vector. Additional there is very little supply
 	*      to be able to manipulate this during that time period of highest vuln.
 	*/
-	function getTWAP() internal returns (uint256)
+	function _getTWAP() internal view returns (uint256 _TWAP, uint256 _priceCumulativeLastYAMETH, uint256 _priceCumulativeLastETHUSDC, uint32 _blockTimestampLast)
 	{
-		(uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
-		uint priceCumulative = isToken0 ? price0Cumulative : price1Cumulative;
-		(,uint priceCumulativeETH,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
-		uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+		(uint256 _price0Cumulative, uint256 _price1Cumulative, uint32 _blockTimestamp) = UniswapV2OracleLibrary.currentCumulativePrices(trade_pair);
+		uint256 _priceCumulative = isToken0 ? _price0Cumulative : _price1Cumulative;
+		(,uint256 _priceCumulativeETH,) = UniswapV2OracleLibrary.currentCumulativePrices(eth_usdc_pair);
+
+		uint32 _timeElapsed = _blockTimestamp - blockTimestampLast; // overflow is desired
 
 		// no period check as is done in isRebaseWindow
 
 		// overflow is desired
-		uint256 priceAverageYAMETH = uint256(uint224((priceCumulative - priceCumulativeLastYAMETH) / timeElapsed));
-		uint256 priceAverageETHUSDC = uint256(uint224((priceCumulativeETH - priceCumulativeLastETHUSDC) / timeElapsed));
+		uint256 _priceAverageYAMETH = uint256(uint224((_priceCumulative - priceCumulativeLastYAMETH) / _timeElapsed));
+		uint256 _priceAverageETHUSDC = uint256(uint224((_priceCumulativeETH - priceCumulativeLastETHUSDC) / _timeElapsed));
 
-		priceCumulativeLastYAMETH = priceCumulative;
-		priceCumulativeLastETHUSDC = priceCumulativeETH;
-		blockTimestampLast = blockTimestamp;
+		// to be returned
+		_priceCumulativeLastYAMETH = _priceCumulative;
+		_priceCumulativeLastETHUSDC = _priceCumulativeETH;
+		_blockTimestampLast = _blockTimestamp;
 
 		// BASE is on order of 1e18, which takes 2^60 bits
 		// multiplication will revert if priceAverage > 2^196
 		// (which it can because it overflows intentially)
-		uint256 YAMETHprice;
-		uint256 ETHprice;
-		if (priceAverageYAMETH > uint192(-1)) {
+		uint256 _YAMETHprice;
+		uint256 _ETHprice;
+		if (_priceAverageYAMETH > uint192(-1)) {
 			// eat loss of precision
 			// effectively: (x / 2**112) * 1e18
-			YAMETHprice = (priceAverageYAMETH >> 112) * BASE;
+			_YAMETHprice = (_priceAverageYAMETH >> 112) * BASE;
 		} else {
 			// cant overflow
 			// effectively: (x * 1e18 / 2**112)
-			YAMETHprice = (priceAverageYAMETH * BASE) >> 112;
+			_YAMETHprice = (_priceAverageYAMETH * BASE) >> 112;
 		}
 
-		if (priceAverageETHUSDC > uint192(-1)) {
-			ETHprice = (priceAverageETHUSDC >> 112) * BASE;
+		if (_priceAverageETHUSDC > uint192(-1)) {
+			_ETHprice = (_priceAverageETHUSDC >> 112) * BASE;
 		} else {
-			ETHprice = (priceAverageETHUSDC * BASE) >> 112;
+			_ETHprice = (_priceAverageETHUSDC * BASE) >> 112;
 		}
 
-		return YAMETHprice.mul(ETHprice).div(10**6);
+		_TWAP = _YAMETHprice.mul(_ETHprice).div(1e6);
+
+		return (_TWAP, _priceCumulativeLastYAMETH, _priceCumulativeLastETHUSDC, _blockTimestampLast);
+	}
+
+	function _updateTWAP() internal returns (uint256 _TWAP)
+	{
+		(_TWAP, priceCumulativeLastYAMETH, priceCumulativeLastETHUSDC, blockTimestampLast) = _getTWAP();
+		return _TWAP;
 	}
 }
 
@@ -651,7 +630,7 @@ contract GElasticRebaser is Ownable, TWAPExt, ReserveBuyerExt //, UniswapPoolsEx
 	 */
 	function activateRebasing() public
 	{
-		require(timeOfTWAPInit > 0, "twap wasnt intitiated, call init_twap()");
+		require(timeOfTWAPInit > 0, "twap wasnt intitiated, call initTWAP()");
 		// cannot enable prior to end of rebaseDelay
 		require(now >= timeOfTWAPInit + rebaseDelay, "!end_delay");
 		rebasingActive = true;
@@ -775,7 +754,7 @@ contract GElasticRebaser is Ownable, TWAPExt, ReserveBuyerExt //, UniswapPoolsEx
 		epoch = epoch.add(1);
 
 		// get twap from uniswap v2;
-		uint256 _exchangeRate = getTWAP();
+		uint256 _exchangeRate = _updateTWAP();
 
 		// calculates % change to supply
 		(uint256 _offPegPerc, bool _positive) = _computeOffPegPerc(_exchangeRate);
@@ -883,9 +862,8 @@ contract GElasticRebaser is Ownable, TWAPExt, ReserveBuyerExt //, UniswapPoolsEx
 	}
 */
 
-	function pairForSushi(address factory, address tokenA, address tokenB) internal pure returns (address pair)
+	function pairForSushi(address factory, address token0, address token1) internal pure returns (address pair)
 	{
-		(address token0, address token1) = sortTokens(tokenA, tokenB);
 		pair = address(uint(keccak256(abi.encodePacked(
 			hex'ff',
 			factory,
