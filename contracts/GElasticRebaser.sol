@@ -23,23 +23,114 @@ interface BAL
 	function gulp(address token) external;
 }
 
-contract GElasticRebaser is Ownable
+contract TransactionsExt is Ownable
 {
-	using SafeMath for uint256;
-
 	struct Transaction {
 		bool enabled;
 		address destination;
 		bytes data;
 	}
 
+	// Stable ordering is not guaranteed.
+	Transaction[] public transactions;
+
+	/**
+	 * @notice Adds a transaction that gets called for a downstream receiver of rebases
+	 * @param destination Address of contract destination
+	 * @param data Transaction data payload
+	 */
+	function addTransaction(address destination, bytes calldata data) external onlyOwner
+	{
+		transactions.push(Transaction({
+			enabled: true,
+			destination: destination,
+			data: data
+		}));
+	}
+
+	/**
+	 * @param index Index of transaction to remove.
+	 *              Transaction ordering may have changed since adding.
+	 */
+	function removeTransaction(uint index) external onlyOwner
+	{
+		require(index < transactions.length, "index out of bounds");
+		if (index < transactions.length - 1) {
+			transactions[index] = transactions[transactions.length - 1];
+		}
+		transactions.pop();
+	}
+
+	/**
+	 * @param index Index of transaction. Transaction ordering may have changed since adding.
+	 * @param enabled True for enabled, false for disabled.
+	 */
+	function setTransactionEnabled(uint index, bool enabled) external onlyOwner
+	{
+		require(index < transactions.length, "index must be in range of stored tx list");
+		transactions[index].enabled = enabled;
+	}
+
+	function executeTransactions() internal
+	{
+		for (uint i = 0; i < transactions.length; i++) {
+			Transaction storage t = transactions[i];
+			if (t.enabled) {
+				bool result = externalCall(t.destination, t.data);
+				if (!result) {
+					emit TransactionFailed(t.destination, i, t.data);
+					revert("Transaction Failed");
+				}
+			}
+		}
+	}
+
+	/**
+	 * @dev wrapper to call the encoded transactions on downstream consumers.
+	 * @param destination Address of destination contract.
+	 * @param data The encoded data payload.
+	 * @return True on success
+	 */
+	function externalCall(address destination, bytes memory data) internal returns (bool)
+	{
+		bool result;
+		assembly {  // solhint-disable-line no-inline-assembly
+			// "Allocate" memory for output
+			// (0x40 is where "free memory" pointer is stored by convention)
+			let outputAddress := mload(0x40)
+
+			// First 32 bytes are the padded length of data, so exclude that
+			let dataAddress := add(data, 32)
+
+			result := call(
+				// 34710 is the value that solidity is currently emitting
+				// It includes callGas (700) + callVeryLow (3, to pay for SUB)
+				// + callValueTransferGas (9000) + callNewAccountGas
+				// (25000, in case the destination address does not exist and needs creating)
+				sub(gas(), 34710),
+				destination,
+				0, // transfer value in wei
+				dataAddress,
+				mload(data),  // Size of the input, in bytes. Stored in position 0 of the array.
+				outputAddress,
+				0  // Output is ignored, therefore the output size is zero
+			)
+		}
+		return result;
+	}
+
+	event TransactionFailed(address indexed destination, uint index, bytes data);
+}
+
+contract GElasticRebaser is Ownable //, TransactionsExt
+{
+	using SafeMath for uint256;
+
 	struct UniVars {
 		uint256 yamsToUni;
 		uint256 amountFromReserves;
 		uint256 mintToReserves;
 	}
-
-	event TransactionFailed(address indexed destination, uint index, bytes data);
 
 /*
 	event NewMaxSlippageFactor(uint256 oldSlippageFactor, uint256 newSlippageFactor);
@@ -51,9 +142,6 @@ contract GElasticRebaser is Ownable
 	event NewReserveContract(address oldReserveContract, address newReserveContract);
 */
 	event TreasuryIncreased(uint256 reservesAdded, uint256 yamsSold, uint256 yamsFromReserves, uint256 yamsToReserves);
-
-	// Stable ordering is not guaranteed.
-	Transaction[] public transactions;
 
 	/// @notice Spreads out getting to the target price
 	uint256 public rebaseLag;
@@ -577,16 +665,7 @@ contract GElasticRebaser is Ownable
 		}
 
 		// call any extra functions
-		for (uint i = 0; i < transactions.length; i++) {
-			Transaction storage t = transactions[i];
-			if (t.enabled) {
-				bool result = externalCall(t.destination, t.data);
-				if (!result) {
-					emit TransactionFailed(t.destination, i, t.data);
-					revert("Transaction Failed");
-				}
-			}
-		}
+		// executeTransactions();
 	}
 
 	/**
@@ -821,81 +900,5 @@ contract GElasticRebaser is Ownable
 		require(tokenA != tokenB, 'UniswapV2Library: IDENTICAL_ADDRESSES');
 		(token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
 		require(token0 != address(0), 'UniswapV2Library: ZERO_ADDRESS');
-	}
-
-/*
-	/**
-	 * @notice Adds a transaction that gets called for a downstream receiver of rebases
-	 * @param destination Address of contract destination
-	 * @param data Transaction data payload
-	 * /
-	function addTransaction(address destination, bytes calldata data) external onlyGov
-	{
-		transactions.push(Transaction({
-			enabled: true,
-			destination: destination,
-			data: data
-		}));
-	}
-
-
-	/**
-	 * @param index Index of transaction to remove.
-	 *              Transaction ordering may have changed since adding.
-	 * /
-	function removeTransaction(uint index) external onlyGov
-	{
-		require(index < transactions.length, "index out of bounds");
-
-		if (index < transactions.length - 1) {
-			transactions[index] = transactions[transactions.length - 1];
-		}
-
-		transactions.length--;
-	}
-
-	/**
-	 * @param index Index of transaction. Transaction ordering may have changed since adding.
-	 * @param enabled True for enabled, false for disabled.
-	 * /
-	function setTransactionEnabled(uint index, bool enabled) external onlyGov
-	{
-		require(index < transactions.length, "index must be in range of stored tx list");
-		transactions[index].enabled = enabled;
-	}
-*/
-
-	/**
-	 * @dev wrapper to call the encoded transactions on downstream consumers.
-	 * @param destination Address of destination contract.
-	 * @param data The encoded data payload.
-	 * @return True on success
-	 */
-	function externalCall(address destination, bytes memory data) internal returns (bool)
-	{
-		bool result;
-		assembly {  // solhint-disable-line no-inline-assembly
-			// "Allocate" memory for output
-			// (0x40 is where "free memory" pointer is stored by convention)
-			let outputAddress := mload(0x40)
-
-			// First 32 bytes are the padded length of data, so exclude that
-			let dataAddress := add(data, 32)
-
-			result := call(
-				// 34710 is the value that solidity is currently emitting
-				// It includes callGas (700) + callVeryLow (3, to pay for SUB)
-				// + callValueTransferGas (9000) + callNewAccountGas
-				// (25000, in case the destination address does not exist and needs creating)
-				sub(gas(), 34710),
-				destination,
-				0, // transfer value in wei
-				dataAddress,
-				mload(data),  // Size of the input, in bytes. Stored in position 0 of the array.
-				outputAddress,
-				0  // Output is ignored, therefore the output size is zero
-			)
-		}
-		return result;
 	}
 }
