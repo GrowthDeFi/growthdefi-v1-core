@@ -17,10 +17,17 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 
 	GElasticTokenManager.Self etm;
 
-	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _treasury)
+	modifier onlyEOA()
+	{
+		require(tx.origin == _msgSender(), "not an externally owned account");
+		_;
+	}
+
+	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _treasury, uint256 _initialSupply)
 		ElasticERC20(_name, _symbol) public
 	{
 		_setupDecimals(_decimals);
+		_mint(_treasury, _initialSupply);
 		etm.init(_treasury);
 	}
 
@@ -69,12 +76,8 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		return etm.epoch;
 	}
 
-	function rebase() public override nonReentrant
+	function rebase() public override onlyEOA nonReentrant
 	{
-		require(msg.sender == tx.origin, "not an externally owned account");
-
-		require(etm.rebaseAvailable(), "not available");
-
 		uint256 _exchangeRate = 1e18;
 //		uint256 _exchangeRate = _updateTWAP();
 
@@ -82,10 +85,10 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 
 		(uint256 _delta, bool _positive, uint256 _mintAmount) = etm.rebase(_exchangeRate, _totalSupply);
 
-		_rebase(_delta, _positive);
+		_rebase(etm.epoch, _delta, _positive);
 
 		if (_mintAmount > 0) {
-			_mint(treasury, _mintAmount);
+			_mint(etm.treasury, _mintAmount);
 		}
 	}
 
@@ -132,7 +135,7 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		emit ChangeRebaseTimingParameters(_oldRebaseMinimumInterval, _oldRebaseWindowOffset, _oldRebaseWindowLength, _newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
 	}
 
-	function _rebase(uint256 _delta, bool _positive) internal virtual
+	function _rebase(uint256 _epoch, uint256 _delta, bool _positive) internal virtual
 	{
 		uint256 _oldScalingFactor = scalingFactor();
 		uint256 _newScalingFactor;
@@ -149,6 +152,6 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 			_newScalingFactor = G.min(_newScalingFactor, maxScalingFactor());
 		}
 		_setScalingFactor(_newScalingFactor);
-		emit Rebase(etm.epoch, _oldScalingFactor, _newScalingFactor);
+		emit Rebase(_epoch, _oldScalingFactor, _newScalingFactor);
 	}
 }

@@ -8,7 +8,6 @@ library GElasticTokenManager
 	using SafeMath for uint256;
 	using GElasticTokenManager for GElasticTokenManager.Self;
 
-	uint256 constant REBASE_ACTIVATION_DELAY = 24 hours;
 	uint256 constant REBASE_MAXIMUM_TREASURY_MINT_PERCENT = 25e16; // 25%
 
 	uint256 constant DEFAULT_REBASE_MINIMUM_INTERVAL = 24 hours;
@@ -90,16 +89,15 @@ library GElasticTokenManager
 		_self.rebaseActive = _rebaseActive;
 	}
 
-	function rebaseAvailable(Self storage _self) public view returns (bool _rebaseAvailable)
+	function rebaseAvailable(Self storage _self) public view returns (bool _available)
 	{
-		if (!_self.rebaseActive) return false;
-		if (now < _self.lastRebaseTime.add(_self.rebaseMinimumInterval)) return false;
-		uint256 _offset = now.mod(_self.rebaseMinimumInterval);
-		return _self.rebaseWindowOffset <= _offset && _offset < _self.rebaseWindowOffset.add(_self.rebaseWindowLength);
+		return _self._rebaseAvailable();
 	}
 
 	function rebase(Self storage _self, uint256 _exchangeRate, uint256 _totalSupply) public returns (uint256 _delta, bool _positive, uint256 _mintAmount)
 	{
+		require(_self._rebaseAvailable(), "not available");
+
 		_self.lastRebaseTime = now.sub(now.mod(_self.rebaseMinimumInterval)).add(_self.rebaseWindowOffset);
 		_self.epoch = _self.epoch.add(1);
 
@@ -121,5 +119,13 @@ library GElasticTokenManager
 		}
 
 		return (_delta, _positive, _mintAmount);
+	}
+
+	function _rebaseAvailable(Self storage _self) internal view returns (bool _available)
+	{
+		if (!_self.rebaseActive) return false;
+		if (now < _self.lastRebaseTime.add(_self.rebaseMinimumInterval)) return false;
+		uint256 _offset = now.mod(_self.rebaseMinimumInterval);
+		return _self.rebaseWindowOffset <= _offset && _offset < _self.rebaseWindowOffset.add(_self.rebaseWindowLength);
 	}
 }
