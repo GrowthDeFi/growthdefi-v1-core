@@ -8,7 +8,7 @@ library GElasticTokenManager
 	using SafeMath for uint256;
 	using GElasticTokenManager for GElasticTokenManager.Self;
 
-	uint256 constant REBASE_MAXIMUM_TREASURY_MINT_PERCENT = 25e16; // 25%
+	uint256 constant MAXIMUM_REBASE_TREASURY_MINT_PERCENT = 25e16; // 25%
 
 	uint256 constant DEFAULT_REBASE_MINIMUM_INTERVAL = 24 hours;
 	uint256 constant DEFAULT_REBASE_WINDOW_OFFSET = 17 hours; // 5PM UTC
@@ -70,7 +70,7 @@ library GElasticTokenManager
 
 	function setRebaseTreasuryMintPercent(Self storage _self, uint256 _rebaseTreasuryMintPercent) public
 	{
-		require(_rebaseTreasuryMintPercent < REBASE_MAXIMUM_TREASURY_MINT_PERCENT, "invalid percent");
+		require(_rebaseTreasuryMintPercent < MAXIMUM_REBASE_TREASURY_MINT_PERCENT, "invalid percent");
 		_self.rebaseTreasuryMintPercent = _rebaseTreasuryMintPercent;
 	}
 
