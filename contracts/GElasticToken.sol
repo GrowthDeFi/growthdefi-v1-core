@@ -25,7 +25,7 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard
 
 	function rebase(uint256 _epoch, uint256 _delta, bool _positive) public onlyOwner
 	{
-		uint256 _oldScalingFactor = scalingFactor;
+		uint256 _oldScalingFactor = scalingFactor();
 		uint256 _newScalingFactor;
 		if (_delta == 0) {
 			_newScalingFactor = _oldScalingFactor;
@@ -37,8 +37,7 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard
 			}
 		}
 		if (_newScalingFactor > _oldScalingFactor) {
-			uint256 _maxScalingFactor = _calcMaxScalingFactor(unscaledTotalSupply);
-			_newScalingFactor = G.min(_newScalingFactor, _maxScalingFactor);
+			_newScalingFactor = G.min(_newScalingFactor, maxScalingFactor());
 		}
 		_setScalingFactor(_newScalingFactor);
 		emit Rebase(_epoch, _oldScalingFactor, _newScalingFactor);

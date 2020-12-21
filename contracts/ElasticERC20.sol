@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.6.0;
 
-//import "../../utils/Address.sol";
-
 import { Context } from "@openzeppelin/contracts/GSN/Context.sol";
 import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -11,32 +9,50 @@ contract ElasticERC20 is Context, IERC20
 {
 	using SafeMath for uint256;
 
+	uint8 constant UNSCALED_DECIMALS = 24;
+	uint256 constant UNSCALED_FACTOR = 10 ** uint256(UNSCALED_DECIMALS);
+
 	mapping (address => mapping (address => uint256)) private allowances;
 
-	mapping (address => uint256) unscaledBalanceOf;
-	uint256 unscaledTotalSupply;
+	mapping (address => uint256) private unscaledBalanceOf;
+	uint256 private unscaledTotalSupply;
 
-	uint256 public scalingFactor = 1e18;
+	string private name_;
+	string private symbol_;
+	uint8 private decimals_;
 
-	string public name;
-	string public symbol;
-	uint8 public decimals;
+	uint256 private scalingFactor_;
 
 	constructor (string memory _name, string memory _symbol) public
 	{
-		name = _name;
-		symbol = _symbol;
-		decimals = 18;
+		name_ = _name;
+		symbol_ = _symbol;
+		_setupDecimals(18);
+	}
+
+	function name() public view returns (string memory _name)
+	{
+		return name_;
+	}
+
+	function symbol() public view returns (string memory _symbol)
+	{
+		return symbol_;
+	}
+
+	function decimals() public view returns (uint8 _decimals)
+	{
+		return decimals_;
 	}
 
 	function totalSupply() public view override returns (uint256)
 	{
-		return _scale(unscaledTotalSupply, scalingFactor);
+		return _scale(unscaledTotalSupply, scalingFactor_);
 	}
 
 	function balanceOf(address _account) public view override returns (uint256 _balance)
 	{
-		return _scale(unscaledBalanceOf[_account], scalingFactor);
+		return _scale(unscaledBalanceOf[_account], scalingFactor_);
 	}
 
 	function allowance(address _owner, address _spender) public view virtual override returns (uint256 _allowance)
@@ -85,7 +101,7 @@ contract ElasticERC20 is Context, IERC20
 
 	function _transfer(address _sender, address _recipient, uint256 _amount) internal virtual
 	{
-		uint256 _unscaledAmount = _unscale(_amount, scalingFactor);
+		uint256 _unscaledAmount = _unscale(_amount, scalingFactor_);
 		require(_sender != address(0), "ERC20: transfer from the zero address");
 		require(_recipient != address(0), "ERC20: transfer to the zero address");
 		_beforeTokenTransfer(_sender, _recipient, _amount);
@@ -96,19 +112,19 @@ contract ElasticERC20 is Context, IERC20
 
 	function _mint(address _account, uint256 _amount) internal virtual
 	{
-		uint256 _unscaledAmount = _unscale(_amount, scalingFactor);
+		uint256 _unscaledAmount = _unscale(_amount, scalingFactor_);
 		require(_account != address(0), "ERC20: mint to the zero address");
 		_beforeTokenTransfer(address(0), _account, _amount);
 		unscaledTotalSupply = unscaledTotalSupply.add(_unscaledAmount);
 		uint256 _maxScalingFactor = _calcMaxScalingFactor(unscaledTotalSupply);
-		require(scalingFactor <= _maxScalingFactor, "unsupported scaling factor");
+		require(scalingFactor_ <= _maxScalingFactor, "unsupported scaling factor");
 		unscaledBalanceOf[_account] = unscaledBalanceOf[_account].add(_unscaledAmount);
 		emit Transfer(address(0), _account, _amount);
 	}
 
 	function _burn(address _account, uint256 _amount) internal virtual
 	{
-		uint256 _unscaledAmount = _unscale(_amount, scalingFactor);
+		uint256 _unscaledAmount = _unscale(_amount, scalingFactor_);
 		require(_account != address(0), "ERC20: burn from the zero address");
 		_beforeTokenTransfer(_account, address(0), _amount);
 		unscaledBalanceOf[_account] = unscaledBalanceOf[_account].sub(_unscaledAmount, "ERC20: burn amount exceeds balance");
@@ -118,10 +134,16 @@ contract ElasticERC20 is Context, IERC20
 
 	function _setupDecimals(uint8 _decimals) internal
 	{
-		decimals = _decimals;
+		decimals_ = _decimals;
+		scalingFactor_ = 10 ** uint256(_decimals);
 	}
 
 	function _beforeTokenTransfer(address _from, address _to, uint256 _amount) internal virtual { }
+
+	function scalingFactor() public view returns (uint256 _scalingFactor)
+	{
+		return scalingFactor_;
+	}
 
 	function maxScalingFactor() public view returns (uint256 _maxScalingFactor)
 	{
@@ -135,18 +157,18 @@ contract ElasticERC20 is Context, IERC20
 
 	function _scale(uint256 _unscaledAmount, uint256 _scalingFactor) internal pure returns (uint256 _amount)
 	{
-		return _unscaledAmount.mul(_scalingFactor).div(1e24);
+		return _unscaledAmount.mul(_scalingFactor).div(UNSCALED_FACTOR);
 	}
 
 	function _unscale(uint256 _amount, uint256 _scalingFactor) internal pure returns (uint256 _unscaledAmount)
 	{
-		return _amount.mul(1e24).div(_scalingFactor);
+		return _amount.mul(UNSCALED_FACTOR).div(_scalingFactor);
 	}
 
 	function _setScalingFactor(uint256 _scalingFactor) internal
 	{
 		uint256 _maxScalingFactor = _calcMaxScalingFactor(unscaledTotalSupply);
 		require(0 < _scalingFactor && _scalingFactor <= _maxScalingFactor, "unsupported scaling factor");
-		scalingFactor = _scalingFactor;
+		scalingFactor_ = _scalingFactor;
 	}
 }
