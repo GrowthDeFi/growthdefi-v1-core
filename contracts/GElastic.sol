@@ -10,7 +10,7 @@ interface GElastic
 	function rebaseMaximumDeviation() external view returns (address _rebaseMaximumDeviation);
 	function rebaseDampeningFactor() external view returns (address _rebaseDampeningFactor);
 	function rebaseTreasuryMintPercent() external view returns (address _rebaseTreasuryMintPercent);
-	function rebaseTimingParameters() external view returns (address _rebaseMinimumInterval, address _rebaseWindowOffset, address _rebaseWindowLength);
+	function rebaseTimingParameters() external view returns (uint256 _rebaseMinimumInterval, uint256 _rebaseWindowOffset, uint256 _rebaseWindowLength);
 	function rebaseActive() external view returns (bool _rebaseActive);
 	function rebaseAvailable() external view returns (bool _available);
 	function lastRebaseTime() external view returns (uint256 _lastRebaseTime);

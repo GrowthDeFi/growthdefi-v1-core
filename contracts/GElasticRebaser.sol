@@ -161,9 +161,9 @@ contract GElasticRebaser is Ownable, TWAP
 		return _rebaseAvailable();
 	}
 
-	function rebaseTimingParameters() external view returns (address _rebaseMinimumInterval, address _rebaseWindowOffset, address _rebaseWindowLength)
+	function rebaseTimingParameters() external view returns (uint256 _rebaseMinimumInterval, uint256 _rebaseWindowOffset, uint256 _rebaseWindowLength)
 	{
-		return (_rebaseMinimumInterval, _rebaseWindowOffset, _rebaseWindowLength);
+		return (rebaseMinimumInterval, rebaseWindowOffset, rebaseWindowLength);
 	}
 
 	/**
