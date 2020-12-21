@@ -50,6 +50,13 @@ library GElasticTokenManager
 		_self.epoch = 0;
 	}
 
+	function activateRebase(Self storage _self) public
+	{
+		require(!_self.rebaseActive, "already active");
+		_self.rebaseActive = true;
+		_self.lastRebaseTime = now.sub(now.mod(_self.rebaseMinimumInterval)).add(_self.rebaseWindowOffset);
+	}
+
 	function setTreasury(Self storage _self, address _treasury) public
 	{
 		require(_treasury == address(0), "invalid treasury");
@@ -81,12 +88,6 @@ library GElasticTokenManager
 		_self.rebaseMinimumInterval = _rebaseMinimumInterval;
 		_self.rebaseWindowOffset = _rebaseWindowOffset;
 		_self.rebaseWindowLength = _rebaseWindowLength;
-	}
-
-	function setRebaseActive(Self storage _self, bool _rebaseActive) public
-	{
-		require(!_self.rebaseActive, "already active");
-		_self.rebaseActive = _rebaseActive;
 	}
 
 	function rebaseAvailable(Self storage _self) public view returns (bool _available)

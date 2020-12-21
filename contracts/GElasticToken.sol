@@ -8,14 +8,21 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.s
 import { ElasticERC20 } from "./ElasticERC20.sol";
 import { GElastic } from "./GElastic.sol";
 import { GElasticTokenManager } from "./GElasticTokenManager.sol";
+import { GPriceOracle } from "./GPriceOracle.sol";
 import { G } from "./G.sol";
+
+import { Pair } from "./interop/UniswapV2.sol";
 
 contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 {
 	using SafeMath for uint256;
 	using GElasticTokenManager for GElasticTokenManager.Self;
+	using GPriceOracle for GPriceOracle.Self;
+
+	address public immutable override referenceToken;
 
 	GElasticTokenManager.Self etm;
+	GPriceOracle.Self oracle;
 
 	modifier onlyEOA()
 	{
@@ -23,12 +30,14 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		_;
 	}
 
-	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _treasury, uint256 _initialSupply)
+	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _referenceToken, address _treasury, uint256 _initialSupply)
 		ElasticERC20(_name, _symbol) public
 	{
 		_setupDecimals(_decimals);
+		referenceToken = _referenceToken;
 		_mint(_treasury, _initialSupply);
 		etm.init(_treasury);
+		oracle.init();
 	}
 
 	function treasury() public view override returns (address _treasury)
@@ -78,8 +87,7 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 
 	function rebase() public override onlyEOA nonReentrant
 	{
-		uint256 _exchangeRate = 1e18;
-//		uint256 _exchangeRate = _updateTWAP();
+		uint256 _exchangeRate = oracle.updatePrice();
 
 		uint256 _totalSupply = totalSupply();
 
@@ -92,10 +100,18 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		}
 	}
 
+	function activateOracle(address _pair) public override onlyOwner nonReentrant
+	{
+		address _token0 = Pair(_pair).token0();
+		address _token1 = Pair(_pair).token1();
+		require(_token0 == address(this) && _token1 == referenceToken || _token1 == address(this) && _token0 == referenceToken, "invalid pair");
+		oracle.activate(_pair, _token0 == address(this));
+	}
+
 	function activateRebase() public override onlyOwner nonReentrant
 	{
-//		require(timeOfTWAPInit > 0 && now >= timeOfTWAPInit + REBASE_ACTIVATION_DELAY, "not available");
-		etm.setRebaseActive(true);
+		require(!oracle.active(), "not available");
+		etm.activateRebase();
 	}
 
 	function setTreasury(address _newTreasury) public override onlyOwner nonReentrant

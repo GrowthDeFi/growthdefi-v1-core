@@ -4,6 +4,7 @@ pragma solidity ^0.6.0;
 interface GElastic
 {
 	// view functions
+	function referenceToken() external view returns (address _referenceToken);
 	function treasury() external view returns (address _treasury);
 	function rebaseMaximumDeviation() external view returns (uint256 _rebaseMaximumDeviation);
 	function rebaseDampeningFactor() external view returns (uint256 _rebaseDampeningFactor);
@@ -18,6 +19,7 @@ interface GElastic
 	function rebase() external;
 
 	// priviledged functions
+	function activateOracle(address _pair) external;
 	function activateRebase() external;
 	function setTreasury(address _newTreasury) external;
 	function setRebaseMaximumDeviation(uint256 _newRebaseMaximumDeviation) external;
