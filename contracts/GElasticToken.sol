@@ -116,7 +116,7 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 
 	function activateRebase() public override onlyOwner nonReentrant
 	{
-		require(!oracle.active(), "not available");
+		require(oracle.active(), "not available");
 		etm.activateRebase();
 	}
 

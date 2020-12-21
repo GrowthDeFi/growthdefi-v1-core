@@ -59,7 +59,7 @@ library GElasticTokenManager
 
 	function setTreasury(Self storage _self, address _treasury) public
 	{
-		require(_treasury == address(0), "invalid treasury");
+		require(_treasury != address(0), "invalid treasury");
 		_self.treasury = _treasury;
 	}
 
@@ -77,7 +77,7 @@ library GElasticTokenManager
 
 	function setRebaseTreasuryMintPercent(Self storage _self, uint256 _rebaseTreasuryMintPercent) public
 	{
-		require(_rebaseTreasuryMintPercent < MAXIMUM_REBASE_TREASURY_MINT_PERCENT, "invalid percent");
+		require(_rebaseTreasuryMintPercent <= MAXIMUM_REBASE_TREASURY_MINT_PERCENT, "invalid percent");
 		_self.rebaseTreasuryMintPercent = _rebaseTreasuryMintPercent;
 	}
 
