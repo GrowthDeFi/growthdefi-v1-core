@@ -9,8 +9,8 @@ contract ElasticERC20 is Context, IERC20
 {
 	using SafeMath for uint256;
 
-	uint8 constant UNSCALED_DECIMALS = 24;
-	uint256 constant UNSCALED_FACTOR = 10 ** uint256(UNSCALED_DECIMALS);
+	uint8 public constant UNSCALED_DECIMALS = 24;
+	uint256 public constant UNSCALED_FACTOR = 10 ** uint256(UNSCALED_DECIMALS);
 
 	mapping (address => mapping (address => uint256)) private allowances_;
 
