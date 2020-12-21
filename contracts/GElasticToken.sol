@@ -30,14 +30,15 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		_;
 	}
 
-	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _referenceToken, address _treasury, uint256 _initialSupply)
+	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _referenceToken, uint256 _initialSupply)
 		ElasticERC20(_name, _symbol) public
 	{
+		address _treasury = msg.sender;
 		_setupDecimals(_decimals);
 		referenceToken = _referenceToken;
-		_mint(_treasury, _initialSupply);
 		etm.init(_treasury);
 		oracle.init();
+		_mint(_treasury, _initialSupply);
 	}
 
 	function treasury() public view override returns (address _treasury)

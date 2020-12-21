@@ -6,6 +6,7 @@ import { GTokenType0 } from "./GTokenType0.sol";
 import { GCTokenType1 } from "./GCTokenType1.sol";
 import { GCTokenType2 } from "./GCTokenType2.sol";
 import { GTokenType3 } from "./GTokenType3.sol";
+import { GElasticToken } from "./GElasticToken.sol";
 
 import { $ } from "./network/$.sol";
 
@@ -115,6 +116,18 @@ contract stkGRO is GTokenType3
 {
 	constructor ()
 		GTokenType3("staked GRO", "stkGRO", 18, $.GRO) public
+	{
+	}
+}
+
+/**
+ * @notice Definition of rAAVE. As a gToken Type 4, it is an elastic supply
+ * token that uses AAVE as reference token.
+ */
+contract rAAVE is GElasticToken
+{
+	constructor (uint256 _initialSupply)
+		GElasticToken("rebase AAVE", "rAAVE", 18, $.AAVE, _initialSupply) public
 	{
 	}
 }
