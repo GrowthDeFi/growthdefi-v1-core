@@ -14,6 +14,7 @@ interface GElastic
 	function rebaseAvailable() external view returns (bool _available);
 	function lastRebaseTime() external view returns (uint256 _lastRebaseTime);
 	function epoch() external view returns (uint256 _epoch);
+	function exchangeRate() external view returns (uint256 _exchangeRate);
 
 	// open functions
 	function rebase() external;

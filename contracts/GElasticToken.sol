@@ -86,6 +86,11 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		return etm.epoch;
 	}
 
+	function exchangeRate() public view override returns (uint256 _exchangeRate)
+	{
+		return oracle.getPrice();
+	}
+
 	function rebase() public override onlyEOA nonReentrant
 	{
 		uint256 _exchangeRate = oracle.updatePrice();
