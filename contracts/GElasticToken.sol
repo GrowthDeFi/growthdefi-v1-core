@@ -6,24 +6,133 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import { ElasticERC20 } from "./ElasticERC20.sol";
+import { GElastic } from "./GElastic.sol";
+import { GElasticTokenManager } from "./GElasticTokenManager.sol";
 import { G } from "./G.sol";
 
-contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard
+contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 {
 	using SafeMath for uint256;
+	using GElasticTokenManager for GElasticTokenManager.Self;
 
-	constructor (string memory _name, string memory _symbol, uint8 _decimals)
+	GElasticTokenManager.Self etm;
+
+	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _treasury)
 		ElasticERC20(_name, _symbol) public
 	{
 		_setupDecimals(_decimals);
+		etm.init(_treasury);
 	}
 
-	function mint(address _to, uint256 _amount) public onlyOwner
+	function treasury() public view override returns (address _treasury)
 	{
-		_mint(_to, _amount);
+		return etm.treasury;
 	}
 
-	function rebase(uint256 _epoch, uint256 _delta, bool _positive) public onlyOwner
+	function rebaseMaximumDeviation() public view override returns (uint256 _rebaseMaximumDeviation)
+	{
+		return etm.rebaseMaximumDeviation;
+	}
+
+	function rebaseDampeningFactor() public view override returns (uint256 _rebaseDampeningFactor)
+	{
+		return etm.rebaseDampeningFactor;
+	}
+
+	function rebaseTreasuryMintPercent() public view override returns (uint256 _rebaseTreasuryMintPercent)
+	{
+		return etm.rebaseTreasuryMintPercent;
+	}
+
+	function rebaseTimingParameters() public view override returns (uint256 _rebaseMinimumInterval, uint256 _rebaseWindowOffset, uint256 _rebaseWindowLength)
+	{
+		return (etm.rebaseMinimumInterval, etm.rebaseWindowOffset, etm.rebaseWindowLength);
+	}
+
+	function rebaseAvailable() public override view returns (bool _rebaseAvailable)
+	{
+		return etm.rebaseAvailable();
+	}
+
+	function rebaseActive() public override view returns (bool _rebaseActive)
+	{
+		return etm.rebaseActive;
+	}
+
+	function lastRebaseTime() public override view returns (uint256 _lastRebaseTime)
+	{
+		return etm.lastRebaseTime;
+	}
+
+	function epoch() public override view returns (uint256 _epoch)
+	{
+		return etm.epoch;
+	}
+
+	function rebase() public override nonReentrant
+	{
+		require(msg.sender == tx.origin, "not an externally owned account");
+
+		require(etm.rebaseAvailable(), "not available");
+
+		uint256 _exchangeRate = 1e18;
+//		uint256 _exchangeRate = _updateTWAP();
+
+		uint256 _totalSupply = totalSupply();
+
+		(uint256 _delta, bool _positive, uint256 _mintAmount) = etm.rebase(_exchangeRate, _totalSupply);
+
+		_rebase(_delta, _positive);
+
+		if (_mintAmount > 0) {
+			_mint(treasury, _mintAmount);
+		}
+	}
+
+	function activateRebase() public override onlyOwner nonReentrant
+	{
+//		require(timeOfTWAPInit > 0 && now >= timeOfTWAPInit + REBASE_ACTIVATION_DELAY, "not available");
+		etm.setRebaseActive(true);
+	}
+
+	function setTreasury(address _newTreasury) public override onlyOwner nonReentrant
+	{
+		address _oldTreasury = etm.treasury;
+		etm.setTreasury(_newTreasury);
+		emit ChangeTreasury(_oldTreasury, _newTreasury);
+	}
+
+	function setRebaseMaximumDeviation(uint256 _newRebaseMaximumDeviation) public override onlyOwner nonReentrant
+	{
+		uint256 _oldRebaseMaximumDeviation = etm.rebaseMaximumDeviation;
+		etm.setRebaseMaximumDeviation(_newRebaseMaximumDeviation);
+		emit ChangeRebaseMaximumDeviation(_oldRebaseMaximumDeviation, _newRebaseMaximumDeviation);
+	}
+
+	function setRebaseDampeningFactor(uint256 _newRebaseDampeningFactor) public override onlyOwner nonReentrant
+	{
+		uint256 _oldRebaseDampeningFactor = etm.rebaseDampeningFactor;
+		etm.setRebaseDampeningFactor(_newRebaseDampeningFactor);
+		emit ChangeRebaseDampeningFactor(_oldRebaseDampeningFactor, _newRebaseDampeningFactor);
+	}
+
+	function setRebaseTreasuryMintPercent(uint256 _newRebaseTreasuryMintPercent) public override onlyOwner nonReentrant
+	{
+		uint256 _oldRebaseTreasuryMintPercent = etm.rebaseTreasuryMintPercent;
+		etm.setRebaseTreasuryMintPercent(_newRebaseTreasuryMintPercent);
+		emit ChangeRebaseTreasuryMintPercent(_oldRebaseTreasuryMintPercent, _newRebaseTreasuryMintPercent);
+	}
+
+	function setRebaseTimingParameters(uint256 _newRebaseMinimumInterval, uint256 _newRebaseWindowOffset, uint256 _newRebaseWindowLength) public override onlyOwner nonReentrant
+	{
+		uint256 _oldRebaseMinimumInterval = etm.rebaseMinimumInterval;
+		uint256 _oldRebaseWindowOffset = etm.rebaseWindowOffset;
+		uint256 _oldRebaseWindowLength = etm.rebaseWindowLength;
+		etm.setRebaseTimingParameters(_newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
+		emit ChangeRebaseTimingParameters(_oldRebaseMinimumInterval, _oldRebaseWindowOffset, _oldRebaseWindowLength, _newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
+	}
+
+	function _rebase(uint256 _delta, bool _positive) internal virtual
 	{
 		uint256 _oldScalingFactor = scalingFactor();
 		uint256 _newScalingFactor;
@@ -40,8 +149,6 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard
 			_newScalingFactor = G.min(_newScalingFactor, maxScalingFactor());
 		}
 		_setScalingFactor(_newScalingFactor);
-		emit Rebase(_epoch, _oldScalingFactor, _newScalingFactor);
+		emit Rebase(etm.epoch, _oldScalingFactor, _newScalingFactor);
 	}
-
-	event Rebase(uint256 _epoch, uint256 _oldScalingFactor, uint256 _newScalingFactor);
 }

@@ -288,9 +288,9 @@ contract GElasticRebaser is Ownable, TWAP
 			_mintAmount = _totalSupply.mul(_mintPercent).div(1e18);
 		}
 
-		GElasticToken(elasticToken).rebase(epoch, _delta, _positive);
+		// GElasticToken(elasticToken).rebase(epoch, _delta, _positive);
 		if (_mintAmount > 0) {
-			GElasticToken(elasticToken).mint(treasury, _mintAmount);
+			// GElasticToken(elasticToken).mint(treasury, _mintAmount);
 		}
 	}
 

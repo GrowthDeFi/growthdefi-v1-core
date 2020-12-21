@@ -4,12 +4,10 @@ pragma solidity ^0.6.0;
 interface GElastic
 {
 	// view functions
-	function scalingFactor() external view returns (uint256 _scalingFactor);
-	function maxScalingFactor() external view returns (uint256 _scalingFactor);
 	function treasury() external view returns (address _treasury);
-	function rebaseMaximumDeviation() external view returns (address _rebaseMaximumDeviation);
-	function rebaseDampeningFactor() external view returns (address _rebaseDampeningFactor);
-	function rebaseTreasuryMintPercent() external view returns (address _rebaseTreasuryMintPercent);
+	function rebaseMaximumDeviation() external view returns (uint256 _rebaseMaximumDeviation);
+	function rebaseDampeningFactor() external view returns (uint256 _rebaseDampeningFactor);
+	function rebaseTreasuryMintPercent() external view returns (uint256 _rebaseTreasuryMintPercent);
 	function rebaseTimingParameters() external view returns (uint256 _rebaseMinimumInterval, uint256 _rebaseWindowOffset, uint256 _rebaseWindowLength);
 	function rebaseActive() external view returns (bool _rebaseActive);
 	function rebaseAvailable() external view returns (bool _available);
@@ -17,10 +15,10 @@ interface GElastic
 	function epoch() external view returns (uint256 _epoch);
 
 	// open functions
-	function activateRebase() external;
 	function rebase() external;
 
 	// priviledged functions
+	function activateRebase() external;
 	function setTreasury(address _newTreasury) external;
 	function setRebaseMaximumDeviation(uint256 _newRebaseMaximumDeviation) external;
 	function setRebaseDampeningFactor(uint256 _newRebaseDampeningFactor) external;
