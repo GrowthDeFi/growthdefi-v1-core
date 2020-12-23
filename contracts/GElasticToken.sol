@@ -88,12 +88,14 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 
 	function exchangeRate() public view override returns (uint256 _exchangeRate)
 	{
-		return oracle.getPrice();
+		return oracle.consult(10 ** uint256(decimals()));
 	}
 
 	function rebase() public override onlyEOA nonReentrant
 	{
-		uint256 _exchangeRate = oracle.updatePrice();
+		oracle.update();
+
+		uint256 _exchangeRate = oracle.consult(10 ** uint256(decimals()));
 
 		uint256 _totalSupply = totalSupply();
 
@@ -153,6 +155,7 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		uint256 _oldRebaseMinimumInterval = etm.rebaseMinimumInterval;
 		uint256 _oldRebaseWindowOffset = etm.rebaseWindowOffset;
 		uint256 _oldRebaseWindowLength = etm.rebaseWindowLength;
+		oracle.changePeriod(_newRebaseMinimumInterval);
 		etm.setRebaseTimingParameters(_newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
 		emit ChangeRebaseTimingParameters(_oldRebaseMinimumInterval, _oldRebaseWindowOffset, _oldRebaseWindowLength, _newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
 	}
