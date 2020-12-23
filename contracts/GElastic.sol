@@ -16,6 +16,7 @@ interface GElastic
 	function epoch() external view returns (uint256 _epoch);
 	function lastExchangeRate() external view returns (uint256 _exchangeRate);
 	function currentExchangeRate() external view returns (uint256 _exchangeRate);
+	function pair() external view returns (address _pair);
 
 	// open functions
 	function rebase() external;
