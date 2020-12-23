@@ -86,16 +86,21 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		return etm.epoch;
 	}
 
-	function exchangeRate() public view override returns (uint256 _exchangeRate)
+	function lastExchangeRate() public view override returns (uint256 _exchangeRate)
 	{
-		return oracle.consult(10 ** uint256(decimals()));
+		return oracle.consultLastPrice(10 ** uint256(decimals()));
+	}
+
+	function currentExchangeRate() public view override returns (uint256 _exchangeRate)
+	{
+		return oracle.consultCurrentPrice(10 ** uint256(decimals()));
 	}
 
 	function rebase() public override onlyEOA nonReentrant
 	{
-		oracle.update();
+		oracle.updatePrice();
 
-		uint256 _exchangeRate = oracle.consult(10 ** uint256(decimals()));
+		uint256 _exchangeRate = oracle.consultLastPrice(10 ** uint256(decimals()));
 
 		uint256 _totalSupply = totalSupply();
 
@@ -155,8 +160,8 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		uint256 _oldRebaseMinimumInterval = etm.rebaseMinimumInterval;
 		uint256 _oldRebaseWindowOffset = etm.rebaseWindowOffset;
 		uint256 _oldRebaseWindowLength = etm.rebaseWindowLength;
-		oracle.changePeriod(_newRebaseMinimumInterval);
 		etm.setRebaseTimingParameters(_newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
+		oracle.changeMinimumInterval(_newRebaseMinimumInterval.sub(_newRebaseWindowLength));
 		emit ChangeRebaseTimingParameters(_oldRebaseMinimumInterval, _oldRebaseWindowOffset, _oldRebaseWindowLength, _newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
 	}
 
