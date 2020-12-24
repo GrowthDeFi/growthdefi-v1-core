@@ -33,7 +33,7 @@ contract GDAOModule is ReentrancyGuard
 	using EnumerableSet for EnumerableSet.AddressSet;
 
 	string public constant NAME = "GrowthDeFi DAO Module";
-	string public constant VERSION = "0.0.1";
+	string public constant VERSION = "0.0.2";
 
 	uint256 constant VOTING_ROUND_INTERVAL = 1 days;
 
@@ -43,9 +43,19 @@ contract GDAOModule is ReentrancyGuard
 	address public immutable safe;
 	address public immutable votingToken;
 
-	bool private synced = false;
-	uint256 private votingRound = 0;
+	uint256 private votingRound;
 	EnumerableSet.AddressSet private candidates;
+
+	bool public pendingChanges;
+
+	/**
+	 * @dev Restricts execution to Externally Owned Accounts (EOA).
+	 */
+	modifier onlyEOA()
+	{
+		require(tx.origin == msg.sender, "not an externally owned account");
+		_;
+	}
 
 	/**
 	 * @dev Constructor for the Gnosis Safe extension module.
@@ -57,6 +67,8 @@ contract GDAOModule is ReentrancyGuard
 		safe = _safe;
 		votingToken = _votingToken;
 
+		votingRound = _currentVotingRound();
+
 		address[] memory _owners = G.getOwners(_safe);
 		uint256 _ownersCount = _owners.length;
 		for (uint256 _index = 0; _index < _ownersCount; _index++) {
@@ -64,6 +76,8 @@ contract GDAOModule is ReentrancyGuard
 			bool _success = candidates.add(_owner);
 			assert(_success);
 		}
+
+		pendingChanges = false;
 	}
 
 	/**
@@ -73,7 +87,7 @@ contract GDAOModule is ReentrancyGuard
 	 */
 	function currentVotingRound() public view returns (uint256 _votingRound)
 	{
-		return block.timestamp.div(VOTING_ROUND_INTERVAL);
+		return _currentVotingRound();
 	}
 
 	/**
@@ -84,19 +98,18 @@ contract GDAOModule is ReentrancyGuard
 	 */
 	function timeToNextVotingRound() public view returns (uint256 _timeToNextVotingRound)
 	{
-		uint256 _time = block.timestamp;
-		return _time.div(VOTING_ROUND_INTERVAL).add(1).mul(VOTING_ROUND_INTERVAL).sub(_time);
+		return now.div(VOTING_ROUND_INTERVAL).add(1).mul(VOTING_ROUND_INTERVAL).sub(now);
 	}
 
 	/**
-	 * @notice Returns a boolean indicating whether or not there are pending
-	 *         changes to be applied by calling turnOver().
-	 * @return _hasPendingTurnOver True if there are pending changes.
+	 * @notice Returns a boolean indicating whether or not turnOver()
+	 *         can be called to apply pending changes.
+	 * @return _available Returns true if a new round has started and there
+	 *                    are pending changes.
 	 */
-	function hasPendingTurnOver() internal view returns (bool _hasPendingTurnOver)
+	function turnOverAvailable() public view returns (bool _available)
 	{
-		uint256 _votingRound = block.timestamp.div(VOTING_ROUND_INTERVAL);
-		return _votingRound > votingRound && !synced;
+		return _turnOverAvailable();
 	}
 
 	/**
@@ -127,12 +140,12 @@ contract GDAOModule is ReentrancyGuard
 	 *         the multisig signers with the list from the previous round, if
 	 *         there are changes.
 	 */
-	function appointCandidate() public nonReentrant
+	function appointCandidate() public onlyEOA nonReentrant
 	{
 		address _candidate = msg.sender;
-		_closeRound();
-		require(!candidates.contains(_candidate), "candidate already eligible");
-		require(_appointCandidate(_candidate), "candidate not eligible");
+		if (_turnOverAvailable()) _turnOver();
+		require(!candidates.contains(_candidate), "already eligible");
+		require(_appointCandidate(_candidate), "not eligible");
 	}
 
 	/**
@@ -142,9 +155,10 @@ contract GDAOModule is ReentrancyGuard
 	 *         to figure out whether or not there are pending changes to
 	 *         be applied to the multisig.
 	 */
-	function turnOver() public nonReentrant
+	function turnOver() public onlyEOA nonReentrant
 	{
-		require(_closeRound(), "must wait next interval");
+		require(_turnOverAvailable(), "not available");
+		_turnOver();
 	}
 
 	/**
@@ -162,7 +176,7 @@ contract GDAOModule is ReentrancyGuard
 		uint256 _candidateCount = candidates.length();
 		for (uint256 _index = 0; _index < _candidateCount; _index++) {
 			address _candidate = candidates.at(_index);
-			uint256 _votes = GVoting(votingToken).votes(_candidate);
+			uint256 _votes = _countVotes(_candidate);
 			if (_votes < _leastVotes) {
 				_leastVoted = _candidate;
 				_leastVotes = _votes;
@@ -172,48 +186,59 @@ contract GDAOModule is ReentrancyGuard
 	}
 
 	/**
-	 * @dev Checks whether or not we have entered a new voting round before
-	 *      turning over.
-	 * @return _success A boolean indicating if indeed we have entered a
-	 *                  new voting round.
-	 */
-	function _closeRound() internal returns (bool _success)
-	{
-		uint256 _votingRound = block.timestamp.div(VOTING_ROUND_INTERVAL);
-		if (_votingRound > votingRound) {
-			votingRound = _votingRound;
-			_turnOver();
-			return true;
-		}
-		return false;
-	}
-
-	/**
 	 * @dev Implements the logic for appointing a new candidate. It looks
 	 *      for the appointed candidate with the least votes and if the
 	 *      prospect given canditate has strictly more votes, it replaces
 	 *      it on the list. Note that, if the list has less than 7 appointed
 	 *      candidates, the operation always succeeds.
-	 * @param _candidate The given prospect candidate, assumed not to be on
-	 *                   the list.
+	 * @param _newCandidate The given prospect candidate, assumed not to be
+	 *                      on the list.
 	 * @return _success A boolean indicating if indeed the prospect appointed
 	 *                  candidate has enough votes to beat someone on the
 	 *                  list and the operation succeded.
 	 */
-	function _appointCandidate(address _candidate) internal returns(bool _success)
+	function _appointCandidate(address _newCandidate) internal returns(bool _success)
 	{
+		address _oldCandidate = address(0);
 		uint256 _candidateCount = candidates.length();
 		if (_candidateCount == SIGNING_OWNERS) {
-			uint256 _votes = GVoting(votingToken).votes(_candidate);
-			(address _leastVoted, uint256 _leastVotes) = _findLeastVoted();
-			if (_leastVotes >= _votes) return false;
-			_success = candidates.remove(_leastVoted);
+			uint256 _oldVotes;
+			(_oldCandidate, _oldVotes) = _findLeastVoted();
+			uint256 _newVotes = _countVotes(_newCandidate);
+			if (_newVotes <= _oldVotes) return false;
+
+			_success = candidates.remove(_oldCandidate);
 			assert(_success);
 		}
-		_success = candidates.add(_candidate);
+		_success = candidates.add(_newCandidate);
 		assert(_success);
-		synced = false;
+
+		pendingChanges = true;
+
+		emit CandidateChange(votingRound, _oldCandidate, _newCandidate);
+
 		return true;
+	}
+
+	/**
+	 * @dev Calculates the current voting round.
+	 * @return _votingRound The current voting round as calculated.
+	 */
+	function _currentVotingRound() internal view returns (uint256 _votingRound)
+	{
+		return now.div(VOTING_ROUND_INTERVAL);
+	}
+
+	/**
+	 * @dev Returns a boolean indicating whether or not the multisig
+	 *      can be updated with new signers.
+	 * @return _available Returns true if a new round has started and there
+	 *                    are pending changes.
+	 */
+	function _turnOverAvailable() internal view returns (bool _available)
+	{
+		uint256 _votingRound = _currentVotingRound();
+		return _votingRound > votingRound && pendingChanges;
 	}
 
 	/**
@@ -227,7 +252,9 @@ contract GDAOModule is ReentrancyGuard
 	 */
 	function _turnOver() internal
 	{
-		if (synced) return;
+		votingRound = _currentVotingRound();
+
+		// adds new candidates
 		uint256 _candidateCount = candidates.length();
 		for (uint256 _index = 0; _index < _candidateCount; _index++) {
 			address _candidate = candidates.at(_index);
@@ -235,18 +262,41 @@ contract GDAOModule is ReentrancyGuard
 			bool _success = G.addOwnerWithThreshold(safe, _candidate, 1);
 			assert(_success);
 		}
+
+		// removes old candidates
 		address[] memory _owners = G.getOwners(safe);
 		uint256 _ownersCount = _owners.length;
+		address _prevOwner = address(0x1); // sentinel from Gnosis
 		for (uint256 _index = 0; _index < _ownersCount; _index++) {
 			address _owner = _owners[_index];
-			if (candidates.contains(_owner)) continue;
-			address _prevOwner = _index == 0 ? address(0x1) : _owners[_index - 1];
+			if (candidates.contains(_owner)) {
+				_prevOwner = _owner;
+				continue;
+			}
 			bool _success = G.removeOwner(safe, _prevOwner, _owner, 1);
 			assert(_success);
 		}
+
+		// updates minimum number of signers
 		uint256 _threshold = G.min(_candidateCount, SIGNING_THRESHOLD);
 		bool _success = G.changeThreshold(safe, _threshold);
 		assert(_success);
-		synced = true;
+
+		pendingChanges = false;
+
+		emit TurnOver(votingRound);
 	}
+
+	/**
+	 * @dev Returns the vote count for a given candidate.
+	 * @param _candidate The given candidate.
+	 * @return _votes The number of votes delegated to the given candidate.
+	 */
+	function _countVotes(address _candidate) internal view virtual returns (uint256 _votes)
+	{
+		return GVoting(votingToken).votes(_candidate);
+	}
+
+	event TurnOver(uint256 indexed _votingRound);
+	event CandidateChange(uint256 indexed _votingRound, address indexed _oldCandidate, address indexed _newCandidate);
 }
