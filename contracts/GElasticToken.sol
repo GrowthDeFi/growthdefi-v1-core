@@ -46,9 +46,9 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		return etm.treasury;
 	}
 
-	function rebaseMaximumDeviation() public view override returns (uint256 _rebaseMaximumDeviation)
+	function rebaseMinimumDeviation() public view override returns (uint256 _rebaseMinimumDeviation)
 	{
-		return etm.rebaseMaximumDeviation;
+		return etm.rebaseMinimumDeviation;
 	}
 
 	function rebaseDampeningFactor() public view override returns (uint256 _rebaseDampeningFactor)
@@ -143,11 +143,11 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		emit ChangeTreasury(_oldTreasury, _newTreasury);
 	}
 
-	function setRebaseMaximumDeviation(uint256 _newRebaseMaximumDeviation) public override onlyOwner nonReentrant
+	function setRebaseMinimumDeviation(uint256 _newRebaseMinimumDeviation) public override onlyOwner nonReentrant
 	{
-		uint256 _oldRebaseMaximumDeviation = etm.rebaseMaximumDeviation;
-		etm.setRebaseMaximumDeviation(_newRebaseMaximumDeviation);
-		emit ChangeRebaseMaximumDeviation(_oldRebaseMaximumDeviation, _newRebaseMaximumDeviation);
+		uint256 _oldRebaseMinimumDeviation = etm.rebaseMinimumDeviation;
+		etm.setRebaseMinimumDeviation(_newRebaseMinimumDeviation);
+		emit ChangeRebaseMinimumDeviation(_oldRebaseMinimumDeviation, _newRebaseMinimumDeviation);
 	}
 
 	function setRebaseDampeningFactor(uint256 _newRebaseDampeningFactor) public override onlyOwner nonReentrant

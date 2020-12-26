@@ -13,14 +13,14 @@ library GElasticTokenManager
 	uint256 constant DEFAULT_REBASE_MINIMUM_INTERVAL = 24 hours;
 	uint256 constant DEFAULT_REBASE_WINDOW_OFFSET = 17 hours; // 5PM UTC
 	uint256 constant DEFAULT_REBASE_WINDOW_LENGTH = 1 hours;
-	uint256 constant DEFAULT_REBASE_MAXIMUM_DEVIATION = 5e16; // 5%
+	uint256 constant DEFAULT_REBASE_MINIMUM_DEVIATION = 5e16; // 5%
 	uint256 constant DEFAULT_REBASE_DAMPENING_FACTOR = 10; // 10x to reach 100%
 	uint256 constant DEFAULT_REBASE_TREASURY_MINT_PERCENT = 10e16; // 10%
 
 	struct Self {
 		address treasury;
 
-		uint256 rebaseMaximumDeviation;
+		uint256 rebaseMinimumDeviation;
 		uint256 rebaseDampeningFactor;
 		uint256 rebaseTreasuryMintPercent;
 
@@ -37,7 +37,7 @@ library GElasticTokenManager
 	{
 		_self.treasury = _treasury;
 
-		_self.rebaseMaximumDeviation = DEFAULT_REBASE_MAXIMUM_DEVIATION;
+		_self.rebaseMinimumDeviation = DEFAULT_REBASE_MINIMUM_DEVIATION;
 		_self.rebaseDampeningFactor = DEFAULT_REBASE_DAMPENING_FACTOR;
 		_self.rebaseTreasuryMintPercent = DEFAULT_REBASE_TREASURY_MINT_PERCENT;
 
@@ -63,10 +63,10 @@ library GElasticTokenManager
 		_self.treasury = _treasury;
 	}
 
-	function setRebaseMaximumDeviation(Self storage _self, uint256 _rebaseMaximumDeviation) public
+	function setRebaseMinimumDeviation(Self storage _self, uint256 _rebaseMinimumDeviation) public
 	{
-		require(_rebaseMaximumDeviation > 0, "invalid maximum deviation");
-		_self.rebaseMaximumDeviation = _rebaseMaximumDeviation;
+		require(_rebaseMinimumDeviation > 0, "invalid minimum deviation");
+		_self.rebaseMinimumDeviation = _rebaseMinimumDeviation;
 	}
 
 	function setRebaseDampeningFactor(Self storage _self, uint256 _rebaseDampeningFactor) public
@@ -105,7 +105,7 @@ library GElasticTokenManager
 		_positive = _exchangeRate > 1e18;
 
 		uint256 _deviation = _positive ? _exchangeRate.sub(1e18) : uint256(1e18).sub(_exchangeRate);
-		if (_deviation < _self.rebaseMaximumDeviation) {
+		if (_deviation < _self.rebaseMinimumDeviation) {
 			_deviation = 0;
 			_positive = false;
 		}
