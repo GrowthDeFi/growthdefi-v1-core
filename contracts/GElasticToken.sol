@@ -116,6 +116,10 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		if (_mintAmount > 0) {
 			_mint(etm.treasury, _mintAmount);
 		}
+
+		// updates cached reserve balances on the LP
+		// we may need to perform this on all LPs containing this token
+		Pair(oracle.pair).sync();
 	}
 
 	function activateOracle(address _pair) public override onlyOwner nonReentrant

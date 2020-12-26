@@ -17,6 +17,7 @@ interface Pair is PoolToken
 	function price0CumulativeLast() external view returns (uint256 _price0CumulativeLast);
 	function price1CumulativeLast() external view returns (uint256 _price1CumulativeLast);
 	function getReserves() external view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
+	function sync() external;
 }
 
 interface Router01
