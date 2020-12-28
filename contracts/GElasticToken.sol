@@ -6,6 +6,7 @@ import { SafeMath } from "@openzeppelin/contracts/math/SafeMath.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import { ElasticERC20 } from "./ElasticERC20.sol";
+import { Executor } from "./Executor.sol";
 import { GElastic } from "./GElastic.sol";
 import { GElasticTokenManager } from "./GElasticTokenManager.sol";
 import { GPriceOracle } from "./GPriceOracle.sol";
@@ -18,11 +19,14 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 	using SafeMath for uint256;
 	using GElasticTokenManager for GElasticTokenManager.Self;
 	using GPriceOracle for GPriceOracle.Self;
+	using Executor for Executor.Target[];
 
 	address public immutable override referenceToken;
 
 	GElasticTokenManager.Self etm;
 	GPriceOracle.Self oracle;
+
+	Executor.Target[] public targets;
 
 	modifier onlyEOA()
 	{
@@ -117,9 +121,9 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 			_mint(etm.treasury, _mintAmount);
 		}
 
-		// updates cached reserve balances on the LP
-		// we may need to perform this on all LPs containing this token
+		// updates cached reserve balances wherever necessary
 		Pair(oracle.pair).sync();
+		targets.executeAll();
 	}
 
 	function activateOracle(address _pair) public override onlyOwner nonReentrant
@@ -172,6 +176,41 @@ contract GElasticToken is ElasticERC20, Ownable, ReentrancyGuard, GElastic
 		etm.setRebaseTimingParameters(_newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
 		oracle.changeMinimumInterval(_newRebaseMinimumInterval.sub(_newRebaseWindowLength));
 		emit ChangeRebaseTimingParameters(_oldRebaseMinimumInterval, _oldRebaseWindowOffset, _oldRebaseWindowLength, _newRebaseMinimumInterval, _newRebaseWindowOffset, _newRebaseWindowLength);
+	}
+
+	function addPostRebaseTarget(address _to, bytes memory _data) public override onlyOwner nonReentrant
+	{
+		_addPostRebaseTarget(_to, _data);
+	}
+
+	function removePostRebaseTarget(uint256 _index) public override onlyOwner nonReentrant
+	{
+		_removePostRebaseTarget(_index);
+	}
+
+	function addBalancerPostRebaseTarget(address _pool) public onlyOwner nonReentrant
+	{
+		_addPostRebaseTarget(_pool, abi.encodeWithSignature("gulp(address)", address(this)));
+	}
+
+	function addUniswapV2PostRebaseTarget(address _pair) public onlyOwner nonReentrant
+	{
+		_addPostRebaseTarget(_pair, abi.encodeWithSignature("sync()"));
+	}
+
+	function _addPostRebaseTarget(address _to, bytes memory _data) internal
+	{
+		targets.addTarget(_to, _data);
+		emit AddPostRebaseTarget(_to, _data);
+	}
+
+	function _removePostRebaseTarget(uint256 _index) internal
+	{
+		Executor.Target storage _target = targets[_index];
+		address _to = _target.to;
+		bytes memory _data = _target.data;
+		targets.removeTarget(_index);
+		emit RemovePostRebaseTarget(_to, _data);
 	}
 
 	function _rebase(uint256 _epoch, uint256 _delta, bool _positive) internal virtual

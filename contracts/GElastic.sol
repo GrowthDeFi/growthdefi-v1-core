@@ -29,6 +29,8 @@ interface GElastic
 	function setRebaseDampeningFactor(uint256 _newRebaseDampeningFactor) external;
 	function setRebaseTreasuryMintPercent(uint256 _newRebaseTreasuryMintPercent) external;
 	function setRebaseTimingParameters(uint256 _newRebaseMinimumInterval, uint256 _newRebaseWindowOffset, uint256 _newRebaseWindowLength) external;
+	function addPostRebaseTarget(address _to, bytes memory _data) external;
+	function removePostRebaseTarget(uint256 _index) external;
 
 	// emitted events
 	event Rebase(uint256 _epoch, uint256 _oldScalingFactor, uint256 _newScalingFactor);
@@ -37,4 +39,6 @@ interface GElastic
 	event ChangeRebaseDampeningFactor(uint256 _oldRebaseDampeningFactor, uint256 _newRebaseDampeningFactor);
 	event ChangeRebaseTreasuryMintPercent(uint256 _oldRebaseTreasuryMintPercent, uint256 _newRebaseTreasuryMintPercent);
 	event ChangeRebaseTimingParameters(uint256 _oldRebaseMinimumInterval, uint256 _oldRebaseWindowOffset, uint256 _oldRebaseWindowLength, uint256 _newRebaseMinimumInterval, uint256 _newRebaseWindowOffset, uint256 _newRebaseWindowLength);
+	event AddPostRebaseTarget(address indexed _to, bytes _data);
+	event RemovePostRebaseTarget(address indexed _to, bytes _data);
 }
