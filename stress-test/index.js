@@ -165,6 +165,15 @@ async function mint(token, amount, maxCost) {
   await contract.methods.faucet(token.address, _amount).send({ from: account, value });
 }
 
+async function convert(from, to, amount) {
+  const GEXCHANGE_ABI = require('../build/contracts/GUniswapV2Exchange.json').abi;
+  const GEXCHANGE_ADDRESS = require('../build/contracts/GUniswapV2Exchange.json').networks[networkId].address;
+  const contract = new web3.eth.Contract(GEXCHANGE_ABI, GEXCHANGE_ADDRESS);
+  await from.approve(GEXCHANGE_ADDRESS, amount);
+  const _amount = units(amount, from.decimals);
+  await contract.methods.direct(from.address, to.address, _amount).send({ from: account });
+}
+
 async function newERC20(abi, address) {
   let self;
   const contract = new web3.eth.Contract(abi, address);
@@ -223,6 +232,50 @@ async function newGToken(abi, address) {
       console.log('gas estimate', gasEstimate);
       const { gasUsed } = await contract.methods.withdraw(_grossShares).send({ from: account });
       console.log('gas used', gasUsed);
+    },
+  });
+}
+
+async function newGTokenElastic(abi, address) {
+  let self;
+  const fields = await newERC20(abi, address);
+  const contract = new web3.eth.Contract(abi, address);
+  const referenceToken = await newERC20(abi, await contract.methods.referenceToken().call());
+  return (self = {
+    ...fields,
+    referenceToken,
+    scalingFactor: async () => {
+      const factor = await contract.methods.scalingFactor().call();
+      return coins(factor, self.decimals);
+    },
+    lastExchangeRate: async () => {
+      const factor = await contract.methods.lastExchangeRate().call();
+      return coins(factor, self.decimals);
+    },
+    currentExchangeRate: async () => {
+      const factor = await contract.methods.currentExchangeRate().call();
+      return coins(factor, self.decimals);
+    },
+    rebaseAvailable: async () => {
+      return await contract.methods.rebaseAvailable().call();
+    },
+    rebase: async () => {
+      const gasEstimate = await contract.methods.rebase().estimateGas({ from: account });
+      console.log('gas estimate', gasEstimate);
+      const { gasUsed } = await contract.methods.rebase().send({ from: account });
+      console.log('gas used', gasUsed);
+    },
+    setRebaseMinimumDeviation: async (minimumDeviation) => {
+      await contract.methods.setRebaseMinimumDeviation(minimumDeviation).send({ from: account });
+    },
+    setRebaseDampeningFactor: async (dampeningFactor) => {
+      await contract.methods.setRebaseDampeningFactor(dampeningFactor).send({ from: account });
+    },
+    setRebaseTreasuryMintPercent: async (treasuryMintPercent) => {
+      await contract.methods.setRebaseTreasuryMintPercent(treasuryMintPercent).send({ from: account });
+    },
+    setRebaseTimingParameters: async (minimumInterval, windowOffset, windowLength) => {
+      await contract.methods.setRebaseTimingParameters(minimumInterval, windowOffset, windowLength).send({ from: account });
     },
   });
 }
@@ -294,11 +347,31 @@ function randomAmount(token, balance) {
   return coins(String(_amount), token.decimals);
 }
 
+async function ganacheAdvanceTime(time) {
+  return new Promise((resolve, reject) => {
+    web3.currentProvider.send({ jsonrpc: '2.0', method: 'evm_increaseTime', params: [time], id: Date.now() }, (err, result) => {
+      if (err) return reject(err);
+      return resolve(result);
+    });
+  });
+}
+
+async function ganacheAdvanceBlock() {
+  return new Promise((resolve, reject) => {
+    web3.currentProvider.send({ jsonrpc: '2.0', method: 'evm_mine', id: Date.now() }, (err, result) => {
+      if (err) return reject(err);
+      const block = web3.eth.getBlock('latest');
+      return resolve(block.hash);
+    });
+  });
+}
+
 async function testToken(gtoken)
 {
   const stoken = gtoken.stakesToken;
   const rtoken = gtoken.reserveToken;
   const utoken = gtoken.underlyingToken;
+  const ftoken = gtoken.referenceToken;
 
   blockSubscribe((number) => {
     console.log('block ' + number);
@@ -326,6 +399,9 @@ async function testToken(gtoken)
   if (utoken) {
     console.log(utoken.name, utoken.symbol, utoken.decimals);
   }
+  if (ftoken) {
+    console.log(ftoken.name, ftoken.symbol, ftoken.decimals);
+  }
   if (stoken) {
     console.log('approve', await stoken.approve(gtoken.address, '1000000000'));
     console.log('stoken allowance', await stoken.allowance(account, gtoken.address));
@@ -352,6 +428,18 @@ async function testToken(gtoken)
       console.log('total borrowing underlying', borrowing);
       console.log('collateralization', (100 * Number(borrowing)) / Number(lending));
     }
+    if (ftoken) {
+      const factor = await gtoken.scalingFactor();
+      console.log('scaling factor', factor);
+      try {
+        const lastRate = await gtoken.lastExchangeRate();
+        console.log('last exchange rate', lastRate);
+      } catch {}
+      try {
+        const currentRate = await gtoken.currentExchangeRate();
+        console.log('current exchange rate', currentRate);
+      } catch {}
+    }
     console.log('gtoken balance', await gtoken.balanceOf(account));
     if (stoken) {
       console.log('stoken balance', await stoken.balanceOf(account));
@@ -362,22 +450,29 @@ async function testToken(gtoken)
     if (utoken) {
       console.log('utoken balance', await utoken.balanceOf(account));
     }
+    if (ftoken) {
+      console.log('ftoken balance', await ftoken.balanceOf(account));
+    }
     console.log('eth balance', await getEthBalance(account));
     console.log();
   }
 
   await printSummary();
 
+  if (rtoken) {
+    console.log('minting rtoken');
+    await mint(rtoken, '1', '1');
+    console.log();
+  }
   if (utoken) {
     console.log('minting utoken');
     await mint(utoken, '1', '1');
     console.log();
-  } else {
-    if (rtoken) {
-      console.log('minting rtoken');
-      await mint(rtoken, '1', '1');
-      console.log();
-    }
+  }
+  if (ftoken) {
+    console.log('minting ftoken');
+    await mint(ftoken, '0.0001', '1');
+    console.log();
   }
 
 //  if (rtoken && stoken) {
@@ -391,6 +486,15 @@ async function testToken(gtoken)
 //    try { await gtoken.allocateLiquidityPool(await stoken.balanceOf(account), await gtoken.balanceOf(account)); } catch (e) {}
 //    console.log();
 //  }
+
+  if (ftoken) {
+    console.log('setting rebase parameters');
+    await gtoken.setRebaseMinimumDeviation(1);
+    await gtoken.setRebaseDampeningFactor(1);
+    await gtoken.setRebaseTreasuryMintPercent(0);
+    await gtoken.setRebaseTimingParameters(24 * 60 * 60, 0, 23 * 60 * 60);
+    console.log();
+  }
 
   const ACTIONS = [];
   if (rtoken) {
@@ -406,6 +510,13 @@ async function testToken(gtoken)
     ACTIONS.push('withdrawUnderlying');
     ACTIONS.push('withdrawUnderlyingAll');
   }
+  if (ftoken) {
+    ACTIONS.push('rebase');
+    ACTIONS.push('buy');
+    ACTIONS.push('buyAll');
+    ACTIONS.push('sell');
+    ACTIONS.push('sellAll');
+  }
 
   const MAX_EXECUTED_ACTIONS = 1000;
 
@@ -414,6 +525,10 @@ async function testToken(gtoken)
     await printSummary();
 
     await sleep(5 * 1000);
+
+    await ganacheAdvanceTime(randomInt(24 * 60 * 60));
+
+    await ganacheAdvanceBlock();
 
     const action = ACTIONS[randomInt(ACTIONS.length)];
 
@@ -520,6 +635,65 @@ async function testToken(gtoken)
       console.log('WITHDRAW UNDERLYING ALL', amount, gtoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.withdrawUnderlying(amount);
+      } catch (e) {
+        console.log('!!', e.message);
+      }
+      continue;
+    }
+
+    if (action == 'rebase') {
+      const available = await gtoken.rebaseAvailable();
+      console.log('REBASE', available, gtoken.symbol);
+      try {
+        if (available) await gtoken.rebase();
+      } catch (e) {
+        console.log('!!', e.message);
+      }
+      continue;
+    }
+
+    if (action == 'buy') {
+      const balance = await ftoken.balanceOf(account);
+      const amount = randomAmount(ftoken, balance);
+      console.log('BUY', amount, ftoken.symbol);
+      try {
+        if (Number(amount) > 0) await convert(ftoken, gtoken, amount);
+      } catch (e) {
+        console.log('!!', e.message);
+      }
+      continue;
+    }
+
+    if (action == 'buyAll') {
+      const balance = await ftoken.balanceOf(account);
+      const amount = balance;
+      console.log('BUY ALL', amount, ftoken.symbol);
+      try {
+        if (Number(amount) > 0) await convert(ftoken, gtoken, amount);
+      } catch (e) {
+        console.log('!!', e.message);
+      }
+      continue;
+    }
+
+    if (action == 'sell') {
+      const balance = await gtoken.balanceOf(account);
+      const amount = randomAmount(gtoken, balance);
+      console.log('SELL', amount, gtoken.symbol);
+      try {
+        if (Number(amount) > 0) await convert(gtoken, ftoken, amount);
+      } catch (e) {
+        console.log('!!', e.message);
+      }
+      continue;
+    }
+
+    if (action == 'sellAll') {
+      const balance = await gtoken.balanceOf(account);
+      const amount = balance;
+      console.log('SELL ALL', amount, gtoken.symbol);
+      try {
+        if (Number(amount) > 0) await convert(gtoken, ftoken, amount);
       } catch (e) {
         console.log('!!', e.message);
       }

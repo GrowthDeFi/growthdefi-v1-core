@@ -7,6 +7,7 @@ import { G } from "./G.sol";
 import { Router02 } from "./interop/UniswapV2.sol";
 import { WETH } from "./interop/WrappedEther.sol";
 
+import { Transfers } from "./modules/Transfers.sol";
 import { UniswapV2ExchangeAbstraction } from "./modules/UniswapV2ExchangeAbstraction.sol";
 
 import { $ } from "./network/$.sol";
@@ -61,10 +62,26 @@ contract GUniswapV2Exchange is GExchange
 		return _outputAmount;
 	}
 
+	/* This method is only used by stress-test to easily convert directly
+	 * any pair of ERC-20 tokens supported by UniswapV2.
+	 */
+	function direct(address _token1, address _token2, uint256 _amount) public
+	{
+		address _from = msg.sender;
+		address _router = $.UniswapV2_ROUTER02;
+		Transfers._pullFunds(_token1, _from, _amount);
+		Transfers._approveFunds(_token1, _router, _amount);
+		address[] memory _path = new address[](2);
+		_path[0] = _token1;
+		_path[1] = _token2;
+		Router02(_router).swapExactTokensForTokens(_amount, 0, _path, _from, uint256(-1));
+	}
+
 	/* This method is only used by stress-test to easily mint any ERC-20
 	 * supported by UniswapV2.
 	 */
-	function faucet(address _token, uint256 _amount) public payable {
+	function faucet(address _token, uint256 _amount) public payable
+	{
 		address payable _from = msg.sender;
 		uint256 _value = msg.value;
 		address _router = $.UniswapV2_ROUTER02;
