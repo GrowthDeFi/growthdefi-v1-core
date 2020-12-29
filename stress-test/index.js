@@ -151,27 +151,23 @@ function units(coins, decimals) {
 
 const [account] = web3.currentProvider.getAddresses();
 
-const ABI_ERC20 = require('../build/contracts/ERC20.json').abi;
-const ABI_GTOKEN = require('../build/contracts/GTokenBase.json').abi;
-const ABI_GCTOKEN = require('../build/contracts/GCTokenBase.json').abi;
-const ABI_GEXCHANGE = require('../build/contracts/GUniswapV2Exchange.json').abi;
-
 async function getEthBalance(address) {
   const amount = await web3.eth.getBalance(address);
   return coins(amount, 18);
 }
 
 async function mint(token, amount, maxCost) {
+  const GEXCHANGE_ABI = require('../build/contracts/GUniswapV2Exchange.json').abi;
   const GEXCHANGE_ADDRESS = require('../build/contracts/GUniswapV2Exchange.json').networks[networkId].address;
-  const contract = new web3.eth.Contract(ABI_GEXCHANGE, GEXCHANGE_ADDRESS);
+  const contract = new web3.eth.Contract(GEXCHANGE_ABI, GEXCHANGE_ADDRESS);
   const _amount = units(amount, token.decimals);
   const value = units(maxCost, 18);
   await contract.methods.faucet(token.address, _amount).send({ from: account, value });
 }
 
-async function newERC20(address) {
+async function newERC20(abi, address) {
   let self;
-  const contract = new web3.eth.Contract(ABI_ERC20, address);
+  const contract = new web3.eth.Contract(abi, address);
   const [name, symbol, _decimals] = await Promise.all([
     contract.methods.name().call(),
     contract.methods.symbol().call(),
@@ -202,15 +198,13 @@ async function newERC20(address) {
   });
 }
 
-async function newGToken(address) {
+async function newGToken(abi, address) {
   let self;
-  const fields = await newERC20(address);
-  const contract = new web3.eth.Contract(ABI_GTOKEN, address);
-  const stakesToken = await newERC20(await contract.methods.stakesToken().call());
-  const reserveToken = await newERC20(await contract.methods.reserveToken().call());
+  const fields = await newERC20(abi, address);
+  const contract = new web3.eth.Contract(abi, address);
+  const reserveToken = await newERC20(abi, await contract.methods.reserveToken().call());
   return (self = {
     ...fields,
-    stakesToken,
     reserveToken,
     totalReserve: async () => {
       const amount = await contract.methods.totalReserve().call();
@@ -230,6 +224,17 @@ async function newGToken(address) {
       const { gasUsed } = await contract.methods.withdraw(_grossShares).send({ from: account });
       console.log('gas used', gasUsed);
     },
+  });
+}
+
+async function newGTokenLP(abi, address) {
+  let self;
+  const fields = await newGToken(abi, address);
+  const contract = new web3.eth.Contract(abi, address);
+  const stakesToken = await newERC20(abi, await contract.methods.stakesToken().call());
+  return (self = {
+    ...fields,
+    stakesToken,
     allocateLiquidityPool: async (stakesAmount, sharesAmount) => {
       const _stakesAmount = units(stakesAmount, stakesToken.decimals);
       const _sharesAmount = units(sharesAmount, self.decimals);
@@ -241,11 +246,11 @@ async function newGToken(address) {
   });
 }
 
-async function newGCToken(address) {
+async function newGCToken(abi, address) {
   let self;
-  const fields = await newGToken(address);
-  const contract = new web3.eth.Contract(ABI_GCTOKEN, address);
-  const underlyingToken = await newERC20(await contract.methods.underlyingToken().call());
+  const fields = await newGTokenLP(abi, address);
+  const contract = new web3.eth.Contract(abi, address);
+  const underlyingToken = await newERC20(abit, await contract.methods.underlyingToken().call());
   return (self = {
     ...fields,
     underlyingToken,
@@ -289,12 +294,10 @@ function randomAmount(token, balance) {
   return coins(String(_amount), token.decimals);
 }
 
-async function main(args) {
-  const name = args[2] || 'gcDAI';
-  const GTOKEN_ADDRESS = require('../build/contracts/' + name + '.json').networks[networkId].address;
-  const gtoken = await newGCToken(GTOKEN_ADDRESS);
+async function testToken(gtoken)
+{
   const stoken = gtoken.stakesToken;
-  const ctoken = gtoken.reserveToken;
+  const rtoken = gtoken.reserveToken;
   const utoken = gtoken.underlyingToken;
 
   blockSubscribe((number) => {
@@ -313,61 +316,96 @@ async function main(args) {
   });
 
   console.log(network);
-  console.log(stoken.name, stoken.symbol, stoken.decimals);
   console.log(gtoken.name, gtoken.symbol, gtoken.decimals);
-  console.log(ctoken.name, ctoken.symbol, ctoken.decimals);
-  console.log(utoken.name, utoken.symbol, utoken.decimals);
-  console.log('approve', await stoken.approve(gtoken.address, '1000000000'));
-  console.log('stoken allowance', await stoken.allowance(account, gtoken.address));
-  console.log('approve', await ctoken.approve(gtoken.address, '1000000000'));
-  console.log('ctoken allowance', await ctoken.allowance(account, gtoken.address));
-  console.log('approve', await utoken.approve(gtoken.address, '1000000000'));
-  console.log('utoken allowance', await utoken.allowance(account, gtoken.address));
+  if (stoken) {
+    console.log(stoken.name, stoken.symbol, stoken.decimals);
+  }
+  if (rtoken) {
+    console.log(rtoken.name, rtoken.symbol, rtoken.decimals);
+  }
+  if (utoken) {
+    console.log(utoken.name, utoken.symbol, utoken.decimals);
+  }
+  if (stoken) {
+    console.log('approve', await stoken.approve(gtoken.address, '1000000000'));
+    console.log('stoken allowance', await stoken.allowance(account, gtoken.address));
+  }
+  if (rtoken) {
+    console.log('approve', await rtoken.approve(gtoken.address, '1000000000'));
+    console.log('rtoken allowance', await rtoken.allowance(account, gtoken.address));
+  }
+  if (utoken) {
+    console.log('approve', await utoken.approve(gtoken.address, '1000000000'));
+    console.log('utoken allowance', await utoken.allowance(account, gtoken.address));
+  }
   console.log();
 
   async function printSummary() {
     console.log('total supply', await gtoken.totalSupply());
-    console.log('total reserve', await gtoken.totalReserve());
-    const lending = await gtoken.lendingReserveUnderlying();
-    console.log('total lending underlying', lending);
-    const borrowing = await gtoken.borrowingReserveUnderlying();
-    console.log('total borrowing underlying', borrowing);
-    console.log('collateralization', (100 * Number(borrowing)) / Number(lending));
+    if (rtoken) {
+      console.log('total reserve', await gtoken.totalReserve());
+    }
+    if (utoken) {
+      const lending = await gtoken.lendingReserveUnderlying();
+      console.log('total lending underlying', lending);
+      const borrowing = await gtoken.borrowingReserveUnderlying();
+      console.log('total borrowing underlying', borrowing);
+      console.log('collateralization', (100 * Number(borrowing)) / Number(lending));
+    }
     console.log('gtoken balance', await gtoken.balanceOf(account));
-    console.log('ctoken balance', await ctoken.balanceOf(account));
-    console.log('utoken balance', await utoken.balanceOf(account));
-    console.log('stoken balance', await stoken.balanceOf(account));
+    if (stoken) {
+      console.log('stoken balance', await stoken.balanceOf(account));
+    }
+    if (rtoken) {
+      console.log('rtoken balance', await rtoken.balanceOf(account));
+    }
+    if (utoken) {
+      console.log('utoken balance', await utoken.balanceOf(account));
+    }
     console.log('eth balance', await getEthBalance(account));
     console.log();
   }
 
   await printSummary();
 
-  console.log('minting utoken');
-  await mint(utoken, '100', '1');
-  console.log();
+  if (utoken) {
+    console.log('minting utoken');
+    await mint(utoken, '1', '1');
+    console.log();
+  } else {
+    if (rtoken) {
+      console.log('minting rtoken');
+      await mint(rtoken, '1', '1');
+      console.log();
+    }
+  }
 
-//  console.log('minting ctoken');
-//  await mint(ctoken, '100', '1');
-//  console.log('minting stoken');
-//  await mint(stoken, '1', '1');
-//  console.log('minting gtoken');
-//  await gtoken.deposit('1');
-//  console.log('allocating the pool if required');
-//  try { await gtoken.allocateLiquidityPool(await stoken.balanceOf(account), await gtoken.balanceOf(account)); } catch (e) {}
-//  console.log();
+//  if (rtoken && stoken) {
+//    console.log('minting rtoken');
+//    await mint(rtoken, '100', '1');
+//    console.log('minting stoken');
+//    await mint(stoken, '1', '1');
+//    console.log('minting gtoken');
+//    await gtoken.deposit('1');
+//    console.log('allocating the pool if required');
+//    try { await gtoken.allocateLiquidityPool(await stoken.balanceOf(account), await gtoken.balanceOf(account)); } catch (e) {}
+//    console.log();
+//  }
 
-  const ACTIONS = [
-    'changeRatio',
-    'deposit',
-    'depositAll',
-    'withdraw',
-    'withdrawAll',
-    'depositUnderlying',
-    'depositUnderlyingAll',
-    'withdrawUnderlying',
-    'withdrawUnderlyingAll',
-  ];
+  const ACTIONS = [];
+  if (rtoken) {
+    ACTIONS.push('deposit');
+    ACTIONS.push('depositAll');
+    ACTIONS.push('withdraw');
+    ACTIONS.push('withdrawAll');
+  }
+  if (utoken) {
+    ACTIONS.push('changeRatio');
+    ACTIONS.push('depositUnderlying');
+    ACTIONS.push('depositUnderlyingAll');
+    ACTIONS.push('withdrawUnderlying');
+    ACTIONS.push('withdrawUnderlyingAll');
+  }
 
   const MAX_EXECUTED_ACTIONS = 1000;
 
@@ -393,9 +431,9 @@ async function main(args) {
     }
 
     if (action == 'deposit') {
-      const balance = await ctoken.balanceOf(account);
-      const amount = randomAmount(ctoken, balance);
-      console.log('DEPOSIT', amount, ctoken.symbol);
+      const balance = await rtoken.balanceOf(account);
+      const amount = randomAmount(rtoken, balance);
+      console.log('DEPOSIT', amount, rtoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.deposit(amount);
       } catch (e) {
@@ -405,9 +443,9 @@ async function main(args) {
     }
 
     if (action == 'depositAll') {
-      const balance = await ctoken.balanceOf(account);
+      const balance = await rtoken.balanceOf(account);
       const amount = balance;
-      console.log('DEPOSIT ALL', amount, ctoken.symbol);
+      console.log('DEPOSIT ALL', amount, rtoken.symbol);
       try {
         if (Number(amount) > 0) await gtoken.deposit(amount);
       } catch (e) {
@@ -489,6 +527,14 @@ async function main(args) {
     }
 
   }
+}
+
+async function main(args) {
+  const name = args[2] || 'gDAI';
+  const GTOKEN_ABI = require('../build/contracts/' + name + '.json').abi;
+  const GTOKEN_ADDRESS = require('../build/contracts/' + name + '.json').networks[networkId].address;
+  const gtoken = await newGToken(GTOKEN_ABI, GTOKEN_ADDRESS);
+  await testToken(gtoken);
 }
 
 entrypoint(main);
