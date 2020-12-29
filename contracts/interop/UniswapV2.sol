@@ -6,6 +6,12 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 /**
  * @dev Minimal set of declarations for Uniswap V2 interoperability.
  */
+interface Factory
+{
+	function getPair(address _tokenA, address _tokenB) external view returns (address _pair);
+	function createPair(address _tokenA, address _tokenB) external returns (address _pair);
+}
+
 interface PoolToken is IERC20
 {
 }
@@ -17,6 +23,7 @@ interface Pair is PoolToken
 	function price0CumulativeLast() external view returns (uint256 _price0CumulativeLast);
 	function price1CumulativeLast() external view returns (uint256 _price1CumulativeLast);
 	function getReserves() external view returns (uint112 _reserve0, uint112 _reserve1, uint32 _blockTimestampLast);
+	function mint(address _to) external returns (uint256 _liquidity);
 	function sync() external;
 }
 
