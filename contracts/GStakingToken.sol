@@ -211,6 +211,6 @@ contract GStakingToken is ERC20, ReentrancyGuard, GToken, GStaking
 		uint256 _boostedMaxPeriods = _maxPeriods.mul(11e17).div(1e18);
 		if (_periods >= _boostedMaxPeriods) return 1e18;
 		uint256 _percent = _periods.mul(1e18).div(_boostedMaxPeriods);
-		return uint256(1e18).div(uint256(5e18).sub(uint256(4e18).mul(_percent)));
+		return uint256(1e18).mul(1e18).div(uint256(5e18).sub(uint256(4e18).mul(_percent).div(1e18)));
 	}
 }
