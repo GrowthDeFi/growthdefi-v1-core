@@ -37,7 +37,8 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		reserveToken = _reserveToken;
 		rewardsToken = _rewardsToken;
 		treasury = _treasury;
-		Transfers._pullFunds(_reserveToken, _from, 1);
+		// this must be performed manually
+		// Transfers._pullFunds(_reserveToken, _from, 1);
 		_mint(address(this), 1);
 	}
 
