@@ -12,28 +12,28 @@ import { UniswapV2LiquidityPoolAbstraction } from "./modules/UniswapV2LiquidityP
 contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 {
 	uint256 constant BLOCKS_PER_WEEK = 7 days / 15 seconds;
-	uint256 constant DEFAULT_PERFORMANCE_FEE = 1e15; // 0.1%
-	uint256 constant MAXIMUM_PERFORMANCE_FEE = 10e16; // 10%
+	uint256 constant DEFAULT_PERFORMANCE_FEE = 10e16; // 10%
+	uint256 constant DEFAULT_REWARD_RATE_PER_BLOCK = 1e15; // 0.1%
 
 	address public immutable /*override*/ reserveToken;
 	address public immutable /*override*/ rewardsToken;
 
 	address public treasury;
 	uint256 public performanceFee = DEFAULT_PERFORMANCE_FEE;
+	uint256 public rewardRatePerBlock = DEFAULT_REWARD_RATE_PER_BLOCK;
 
 	uint256 lastContractBlock;
 	uint256 lastUnlockedRewards;
-	uint256 rewardRatePerBlock;
 
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _reserveToken, address _rewardsToken, address _treasury)
 		ERC20(_name, _symbol) public
 	{
+		assert(_reserveToken != _rewardsToken);
 		address _from = msg.sender;
 		_setupDecimals(_decimals);
 		reserveToken = _reserveToken;
 		rewardsToken = _rewardsToken;
 		treasury = _treasury;
-		assert(_reserveToken != _rewardsToken);
 		Transfers._pullFunds(_reserveToken, _from, 1);
 		_mint(address(this), 1);
 	}
@@ -104,8 +104,14 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 
 	function setPerformanceFee(uint256 _performanceFee) external /*override*/ onlyOwner nonReentrant
 	{
-		require(_performanceFee <= MAXIMUM_PERFORMANCE_FEE, "invalid rate");
+		require(_performanceFee <= 1e18, "invalid rate");
 		performanceFee = _performanceFee;
+	}
+
+	function setRewardRatePerBlock(uint256 _rewardRatePerBlock) external /*override*/ onlyOwner nonReentrant
+	{
+		require(_rewardRatePerBlock <= 1e18, "invalid rate");
+		rewardRatePerBlock = _rewardRatePerBlock;
 	}
 
 	function _updateRewards() internal
