@@ -13,24 +13,27 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 {
 	uint256 constant BLOCKS_PER_WEEK = 7 days / 15 seconds;
 	uint256 constant DEFAULT_PERFORMANCE_FEE = 10e16; // 10%
-	uint256 constant DEFAULT_REWARD_RATE_PER_BLOCK = 1e15; // 0.1%
+	uint256 constant DEFAULT_REWARD_RATE_PER_WEEK = 1e16; // 1%
 
 	address public immutable /*override*/ reserveToken;
 	address public immutable /*override*/ rewardsToken;
 
 	address public treasury;
-	uint256 public performanceFee = DEFAULT_PERFORMANCE_FEE;
-	uint256 public rewardRatePerBlock = DEFAULT_REWARD_RATE_PER_BLOCK;
 
-	uint256 lastContractBlock;
-	uint256 lastUnlockedRewards;
+	uint256 public performanceFee = DEFAULT_PERFORMANCE_FEE;
+	uint256 public rewardRatePerWeek = DEFAULT_REWARD_RATE_PER_WEEK;
+
+	uint256 lastContractBlock = block.number;
+	uint256 lastRewardPerBlock = 0;
+	uint256 lastUnlockedReward = 0;
+	uint256 lastLockedReward = 0;
 
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _reserveToken, address _rewardsToken, address _treasury)
 		ERC20(_name, _symbol) public
 	{
-		assert(_reserveToken != _rewardsToken);
 		address _from = msg.sender;
 		_setupDecimals(_decimals);
+		assert(_reserveToken != _rewardsToken);
 		reserveToken = _reserveToken;
 		rewardsToken = _rewardsToken;
 		treasury = _treasury;
@@ -53,19 +56,10 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		return Transfers._getBalance(reserveToken);
 	}
 
-	function totalRewards() public view /*override*/ returns (uint256 _totalLockedReward, uint256 _totalUnlockedReward)
+	function rewardInfo() public view /*override*/ returns (uint256 _lockedReward, uint256 _unlockedReward, uint256 _rewardPerBlock)
 	{
-		uint256 _oldUnlocked = lastUnlockedRewards;
-		uint256 _oldLocked = Transfers._getBalance(rewardsToken).sub(_oldUnlocked);
-		uint256 _blocks = block.number.sub(lastContractBlock);
-		if (_blocks == 0) return (_oldLocked, _oldUnlocked);
-
-
-
-		uint256 _factor = Math._powi(uint256(1e18).sub(rewardRatePerBlock), _blocks);
-		uint256 _newLocked = _oldLocked.mul(_factor).div(1e18);
-		uint256 _newUnlocked = _oldUnlocked.add(_oldLocked.sub(_newLocked));
-		return (_newLocked, _newUnlocked);
+		(, _rewardPerBlock, _unlockedReward, _lockedReward) = _calcCurrentRewards();
+		return (_lockedReward, _unlockedReward, _rewardPerBlock);
 	}
 
 	function deposit(uint256 _cost, uint256 _minShares) external /*override*/ nonReentrant
@@ -86,14 +80,14 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		_burn(_from, _shares);
 	}
 
-	function adjustReserve() external /*override*/ nonReentrant
+	function gulp() external /*override*/ nonReentrant
 	{
 		_updateRewards();
-		uint256 _profitCost = UniswapV2LiquidityPoolAbstraction._joinPool(reserveToken, rewardsToken, lastUnlockedRewards, 1);
-		lastUnlockedRewards = 0;
+		uint256 _profitCost = UniswapV2LiquidityPoolAbstraction._joinPool(reserveToken, rewardsToken, lastUnlockedReward, 1);
 		uint256 _feeCost = _profitCost.mul(performanceFee).div(1e18);
 		uint256 _feeShares = calcSharesFromCost(_feeCost);
 		_mint(treasury, _feeShares);
+		lastUnlockedReward = 0;
 	}
 
 	function setTreasury(address _treasury) external /*override*/ onlyOwner nonReentrant
@@ -108,17 +102,59 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		performanceFee = _performanceFee;
 	}
 
-	function setRewardRatePerBlock(uint256 _rewardRatePerBlock) external /*override*/ onlyOwner nonReentrant
+	function setRewardRatePerWeek(uint256 _rewardRatePerWeek) external /*override*/ onlyOwner nonReentrant
 	{
-		require(_rewardRatePerBlock <= 1e18, "invalid rate");
-		rewardRatePerBlock = _rewardRatePerBlock;
+		require(_rewardRatePerWeek <= 1e18, "invalid rate");
+		rewardRatePerWeek = _rewardRatePerWeek;
 	}
 
 	function _updateRewards() internal
 	{
-		if (block.number > lastContractBlock) {
-			(,lastUnlockedRewards) = totalRewards();
-			lastContractBlock = block.number;
+		(lastContractBlock, lastRewardPerBlock, lastUnlockedReward, lastLockedReward) = _calcCurrentRewards();
+		uint256 _balanceReward = Transfers._getBalance(rewardsToken);
+		uint256 _totalReward = lastLockedReward.add(lastUnlockedReward);
+		if (_balanceReward > _totalReward) {
+			uint256 _newLockedReward = _balanceReward.sub(_totalReward);
+			uint256 _newRewardPerBlock = _calcRewardPerBlock(_newLockedReward);
+			lastRewardPerBlock = lastRewardPerBlock.add(_newRewardPerBlock);
+			lastLockedReward = lastLockedReward.add(_newLockedReward);
 		}
+	}
+
+	function _calcCurrentRewards() internal view returns (uint256 _currentContractBlock, uint256 _currentRewardPerBlock, uint256 _currentUnlockedReward, uint256 _currentLockedReward)
+	{
+		uint256 _contractBlock = lastContractBlock;
+		uint256 _rewardPerBlock = lastRewardPerBlock;
+		uint256 _unlockedReward = lastUnlockedReward;
+		uint256 _lockedReward = lastLockedReward;
+		if (_contractBlock < block.number) {
+			uint256 _week = _contractBlock.div(BLOCKS_PER_WEEK);
+			uint256 _offset = _contractBlock.mod(BLOCKS_PER_WEEK);
+
+			_contractBlock = block.number;
+			uint256 _currentWeek = _contractBlock.div(BLOCKS_PER_WEEK);
+			uint256 _currentOffset = _contractBlock.mod(BLOCKS_PER_WEEK);
+
+			while (_week < _currentWeek) {
+				uint256 _blocks = BLOCKS_PER_WEEK.sub(_offset);
+				uint256 _reward = _blocks.mul(_rewardPerBlock);
+				_unlockedReward = _unlockedReward.add(_reward);
+				_lockedReward = _lockedReward.sub(_reward);
+				_rewardPerBlock = _calcRewardPerBlock(_lockedReward);
+				_week++;
+				_offset = 0;
+			}
+
+			uint256 _blocks = _currentOffset.sub(_offset);
+			uint256 _reward = _blocks.mul(_rewardPerBlock);
+			_unlockedReward = _unlockedReward.add(_reward);
+			_lockedReward = _lockedReward.sub(_reward);
+		}
+		return (_contractBlock, _rewardPerBlock, _unlockedReward, _lockedReward);
+	}
+
+	function _calcRewardPerBlock(uint256 _lockedReward) internal view returns (uint256 _rewardPerBlock)
+	{
+		return _lockedReward.mul(rewardRatePerWeek).div(1e18).div(BLOCKS_PER_WEEK);
 	}
 }
