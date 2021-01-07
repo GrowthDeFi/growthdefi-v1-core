@@ -28,10 +28,12 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 	uint256 lastUnlockedReward = 0;
 	uint256 lastLockedReward = 0;
 
+	uint256 lastTotalSupply = 1;
+	uint256 lastTotalReserve = 1;
+
 	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _reserveToken, address _rewardsToken, address _treasury)
 		ERC20(_name, _symbol) public
 	{
-		address _from = msg.sender;
 		_setupDecimals(_decimals);
 		assert(_reserveToken != _rewardsToken);
 		reserveToken = _reserveToken;
@@ -63,32 +65,48 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		return (_lockedReward, _unlockedReward, _rewardPerBlock);
 	}
 
-	function deposit(uint256 _cost, uint256 _minShares) external /*override*/ nonReentrant
+	function deposit(uint256 _cost) external /*override*/ nonReentrant
 	{
 		address _from = msg.sender;
 		uint256 _shares = calcSharesFromCost(_cost);
-		require(_shares >= _minShares, "minimum not met");
 		Transfers._pullFunds(reserveToken, _from, _cost);
 		_mint(_from, _shares);
 	}
 
-	function withdraw(uint256 _shares, uint256 _minCost) external /*override*/ nonReentrant
+	function withdraw(uint256 _shares) external /*override*/ nonReentrant
 	{
 		address _from = msg.sender;
 		uint256 _cost = calcCostFromShares(_shares);
-		require(_cost >= _minCost, "minimum not met");
 		Transfers._pushFunds(reserveToken, _from, _cost);
 		_burn(_from, _shares);
 	}
 
-	function gulp() external /*override*/ nonReentrant
+	function gulpRewards() external /*override*/ nonReentrant
 	{
 		_updateRewards();
-		uint256 _profitCost = UniswapV2LiquidityPoolAbstraction._joinPool(reserveToken, rewardsToken, lastUnlockedReward, 1);
-		uint256 _feeCost = _profitCost.mul(performanceFee).div(1e18);
-		uint256 _feeShares = calcSharesFromCost(_feeCost);
-		_mint(treasury, _feeShares);
+		UniswapV2LiquidityPoolAbstraction._joinPool(reserveToken, rewardsToken, lastUnlockedReward, 1);
 		lastUnlockedReward = 0;
+	}
+
+	function gulpFees() external /*override*/ nonReentrant
+	{
+		uint256 _oldTotalSupply = lastTotalSupply;
+		uint256 _oldTotalReserve = lastTotalReserve;
+
+		uint256 _newTotalSupply = totalSupply();
+		uint256 _newTotalReserve = totalReserve();
+
+		uint256 _positive = _oldTotalSupply.mul(_newTotalReserve);
+		uint256 _negative = _newTotalSupply.mul(_oldTotalReserve);
+		if (_positive > _negative) {
+			uint256 _profitCost = _positive.sub(_negative).div(_oldTotalSupply);
+			uint256 _feeCost = _profitCost.mul(performanceFee).div(1e18);
+			uint256 _feeShares = calcSharesFromCost(_feeCost);
+			_mint(treasury, _feeShares);
+		}
+
+		lastTotalSupply = _newTotalSupply;
+		lastTotalReserve = _newTotalReserve;
 	}
 
 	function setTreasury(address _treasury) external /*override*/ onlyOwner nonReentrant
