@@ -39,7 +39,10 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		reserveToken = _reserveToken;
 		rewardsToken = _rewardsToken;
 		treasury = _treasury;
-		// this must be performed manually
+		// just after creation it must transfer 1 wei from reserveToken
+		// into this contract
+		// this must be performed manually because we cannot approve
+		// the spending by this contract before it exists
 		// Transfers._pullFunds(_reserveToken, _from, 1);
 		_mint(address(this), 1);
 	}
@@ -96,6 +99,9 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		uint256 _newTotalSupply = totalSupply();
 		uint256 _newTotalReserve = totalReserve();
 
+		// calculates the profit using the following formula
+		// ((P1 - P0) * S1 * f) / P1
+		// where P1 = R1 / S1 and P0 = R0 / S0
 		uint256 _positive = _oldTotalSupply.mul(_newTotalReserve);
 		uint256 _negative = _newTotalSupply.mul(_oldTotalReserve);
 		if (_positive > _negative) {
