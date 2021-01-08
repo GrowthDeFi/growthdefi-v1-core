@@ -138,6 +138,18 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 			lastRewardPerBlock = lastRewardPerBlock.add(_newRewardPerBlock);
 			lastLockedReward = lastLockedReward.add(_newLockedReward);
 		}
+		else
+		if (_balanceReward < _totalReward) {
+			uint256 _removedLockedReward = _totalReward.sub(_balanceReward);
+			uint256 _removedRewardPerBlock = _calcRewardPerBlock(_removedLockedReward);
+			if (_removedLockedReward >= lastLockedReward) {
+				_removedRewardPerBlock = lastLockedReward;
+				_removedLockedReward = lastRewardPerBlock;
+			}
+			lastRewardPerBlock = lastRewardPerBlock.sub(_removedRewardPerBlock);
+			lastLockedReward = lastLockedReward.sub(_removedLockedReward);
+			lastUnlockedReward = _balanceReward.sub(lastLockedReward);
+		}
 	}
 
 	function _calcCurrentRewards() internal view returns (uint256 _currentContractBlock, uint256 _currentRewardPerBlock, uint256 _currentUnlockedReward, uint256 _currentLockedReward)
