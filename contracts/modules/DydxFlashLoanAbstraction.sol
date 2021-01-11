@@ -59,15 +59,29 @@ library DydxFlashLoanAbstraction
 		uint256 _grossAmount = _netAmount.add(_feeAmount);
 		// attempts to find the market id given a reserve token
 		uint256 _marketId = uint256(-1);
-		uint256 _numMarkets = SoloMargin(_solo).getNumMarkets();
-		for (uint256 _i = 0; _i < _numMarkets; _i++) {
-			address _address = SoloMargin(_solo).getMarketTokenAddress(_i);
-			if (_address == _token) {
-				_marketId = _i;
-				break;
-			}
+		if ($.NETWORK == $.Network.Mainnet) {
+			// if (_token == $.WETH) _marketId = 0;
+			// else
+			// if (_token == $.SAI) _marketId = 1;
+			// else
+			if (_token == $.USDC) _marketId = 2;
+			else
+			if (_token == $.DAI) _marketId = 3;
+		}
+		else
+		if ($.NETWORK == $.Network.Kovan) {
+			// if (_token == $.WETH) _marketId = 0;
+			// else
+			if (_token == $.DAI) _marketId = 1;
+			else
+			if (_token == $.USDC) _marketId = 2;
 		}
 		if (_marketId == uint256(-1)) return false;
+		try SoloMargin(_solo).getMarketTokenAddress(_marketId) returns (address _address) {
+			if (_address != _token) return false;
+		} catch (bytes memory /* _data */) {
+			return false;
+		}
 		// a flash loan on Dydx is achieved by the following sequence of
 		// actions: withdrawal, user call back, and finally a deposit;
 		// which is configured below
