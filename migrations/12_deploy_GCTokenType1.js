@@ -1,6 +1,7 @@
 const tokens = {
   'gcDAI': [['gDAI', `${90e16}`]],
   'gcUSDC': [['gUSDC', `${90e16}`]],
+  'gcUSDT': [['gUSDT', `${90e16}`]],
 }
 
 const G = artifacts.require('G');

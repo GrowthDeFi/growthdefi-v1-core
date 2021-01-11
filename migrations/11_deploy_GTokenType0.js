@@ -1,6 +1,7 @@
 const names = [
-  'gDAI', 'gUSDC',
-  'gETH', 'gWBTC',
+  'gDAI', 'gUSDC', 'gUSDT',
+  'gETH', 'gWBTC', 'gBAT', 'gZRX', 'gUNI', 'gCOMP',
+  'gENJ', 'gKNC', 'gAAVE', 'gLINK', 'gMANA', 'gREN', 'gSNX', 'gYFI',
 ];
 
 const G = artifacts.require('G');

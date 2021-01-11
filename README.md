@@ -94,8 +94,9 @@ presented below. Their actual functionality is described in the next section.
   mechanism for governance, respectivelly.
 * **Abstract contract files** that provide the basis implementation of shared
   functionality for their respective interface. These are basically
-  [GTokenBase.sol](contracts/GTokenBase.sol) for gTokens, and
-  [GCTokenBase.sol](contracts/GCTokenBase.sol) for gcTokens.
+  [GTokenBase.sol](contracts/GTokenBase.sol) for gTokens,
+  [GCTokenBase.sol](contracts/GCTokenBase.sol) for gcTokens, and
+  [GATokenBase.sol](contracts/GATokenBase.sol) for gaTokens.
   Note that gTokens extend the ERC-20 specification and we use the
   [OpenZeppelin](https://github.com/OpenZeppelin/openzeppelin-contracts/tree/v3.2.0)
   library as basis for their implementation. Besides the ERC-20 related
@@ -108,7 +109,8 @@ presented below. Their actual functionality is described in the next section.
   gTokens Type 0 (a.k.a. PMTs) [GTokenType0.sol](contracts/GTokenType0.sol);
   gcTokens implemented in two flavors: Type 1 gcTokens
   [GCTokenType1.sol](contracts/GCTokenType1.sol), and Type 2 gcTokens
-  [GCTokenType2.sol](contracts/GCTokenType2.sol). A special gToken Type 3
+  [GCTokenType2.sol](contracts/GCTokenType2.sol); and the gaTokens Type 2
+  [GATokenType2.sol](contracts/GATokenType2.sol). A special gToken Type 3
   [GTokenType3.sol](contracts/GTokenType3.sol) provides the foundation for
   governance by implementing a 1-level delegation voting token.
 * **Component contracts as (public) libraries** that provide core functionality
@@ -127,14 +129,18 @@ presented below. Their actual functionality is described in the next section.
   delegated reserve management/handling where borrowing is employed to mint
   other gTokens that are used to maintain and grow the cToken reserve
   (used by Type 2 gcTokens);
+  [GADelegatedReserveManager.sol](contracts/GADelegatedReserveManager.sol) for
+  delegated reserve management/handling where borrowing is employed to mint
+  other gTokens that are used to maintain and grow the aToken reserve
+  (used by Type 2 gaTokens);
 * **A single entrypoint file** [GTokens.sol](contracts/GTokens.sol) that
   succinctly declares all the available gTokens.
 * **A set of public libraries** to abstract the available modules.
   The [G.sol](contracts/G.sol) library that compiles and serves as
   entrypoint to most the relevant functions available under the
-  [/modules/](contracts/modules) folder. The [GC.sol](contracts/GC.sol),
-  similarly, do the same for the Compound lending market abstractions,
-  respectively. These libraries exists mostly to
+  [/modules/](contracts/modules) folder. The [GC.sol](contracts/GC.sol) and
+  [GA.sol](contracts/GA.sol), similarly, do the same for the Compound and Aave
+  lending market abstractions, respectively. These libraries exists mostly to
   work around the EVM limitation of contract sizes, but it also provide a concise
   standardized and neat reference to library code.
 * **Two handy pure calculation libraries** that hoist gToken and gcToken
@@ -175,15 +181,41 @@ hierarchy:
   * gToken (Type 0)
     * gDAI
     * gUSDC
+    * gUSDT
     * gETH
     * gWBTC
+    * gBAT
+    * gZRX
+    * gUNI
+    * gENJ
+    * gKNC
+    * gAAVE
+    * gLINK
+    * gMANA
+    * gREN
+    * gSNX
+    * gYFI
   * gcToken
     * gcToken (Type 1)
       * gcDAI
       * gcUSDC
+      * gcUSDT
     * gcToken (Type 2)
       * gcETH
       * gcWBTC
+      * gcBAT
+      * gcZRX
+      * gcUNI
+  * gaToken
+    * gaToken (Type 2)
+      * gacENJ
+      * gacKNC
+      * gacAAVE
+      * gacLINK
+      * gacMANA
+      * gacREN
+      * gacSNX
+      * gacYFI
   * gToken (Type 3)
     * stkGRO
 
@@ -245,7 +277,7 @@ every asset supported by the GrowthDeFi platform there is a gToken Type 0
 correspondent. The PMTs are the entry points to the platform.
 
 The default configuration for a gToken Type 0, as of this writting, is to
-allocate 90% of the reserve assets to its correspondent gcToken
+allocate 90% of the reserve assets to its correspondent gcToken or gacTokens
 and leave 10% of the reserve liquid (for instance, the gDAI PMT is composed of
 10% liquid DAI and 90% gcDAI).
 
@@ -350,6 +382,26 @@ Relevant implementation files:
 * [GMining.sol](contracts/GMining.sol)
 * [GCTokenType2.sol](contracts/GCTokenType2.sol)
 * [GCDelegatedReserveManager.sol](contracts/GCDelegatedReserveManager.sol)
+
+### Basic gaToken Type 2 functionality
+
+In terms of functionality and structure, the gaToken Type 2 family is exactly
+identical to the gcToken Type 2 family with two noted exceptions: 1) We use
+Aave instead of Compound for the underlying lending market platform; 2) There
+is no liquidity mining.
+
+To summarize, deposits into a gaToken Type 2 contract are used to mint the
+associated aToken and used as collateral to borrow DAI and mint gDAI.
+Withdrawals work the other way around, we redeem gDAI, repay the loan, and
+finally redeem the deposits aTokens. There are parameters to set the target
+collateralization ratio and margins for loans, in order to optimize operations
+and decrease gas consumption.
+
+Relevant implementation files:
+
+* [GATokenBase.sol](contracts/GATokenBase.sol)
+* [GATokenType2.sol](contracts/GATokenType2.sol)
+* [GADelegatedReserveManager.sol](contracts/GADelegatedReserveManager.sol)
 
 ### Basic gToken Type 3 functionality
 

@@ -7,56 +7,52 @@ import { GCToken } from "./GCToken.sol";
 import { GCFormulae } from "./GCFormulae.sol";
 import { GMining } from "./GMining.sol";
 import { G } from "./G.sol";
-import { GC } from "./GC.sol";
+import { GA } from "./GA.sol";
 
 import { $ } from "./network/$.sol";
 
 /**
  * @notice This abstract contract provides the basis implementation for all
- *         gcTokens, i.e. gTokens that use Compound cTokens as reserve, and
+ *         gaTokens, i.e. gTokens that use Aave aTokens as reserve, and
  *         implements the common functionality shared amongst them.
  *         In a nutshell, it extends the functinality of the GTokenBase contract
- *         to support operating directly using the cToken underlying asset.
+ *         to support operating directly using the aToken underlying asset.
  *         Therefore this contract provides functions that encapsulate minting
- *         and redeeming of cTokens internally, allowing users to interact with
+ *         and redeeming of aTokens internally, allowing users to interact with
  *         the contract providing funds directly in their underlying asset.
  */
-abstract contract GCTokenBase is GTokenBase, GCToken, GMining
+abstract contract GATokenBase is GTokenBase, GCToken, GMining
 {
-	address public immutable override miningToken;
+	address public immutable override miningToken; // unused
 	address public immutable override growthToken;
 	address public immutable override underlyingToken;
 
 	/**
-	 * @dev Constructor for the gcToken contract.
+	 * @dev Constructor for the gaToken contract.
 	 * @param _name The ERC-20 token name.
 	 * @param _symbol The ERC-20 token symbol.
 	 * @param _decimals The ERC-20 token decimals.
 	 * @param _stakesToken The ERC-20 token address to be used as stakes
 	 *                     token (GRO).
 	 * @param _reserveToken The ERC-20 token address to be used as reserve
-	 *                      token (e.g. cDAI for gcDAI).
-	 * @param _miningToken The ERC-20 token used for liquidity mining on
-	 *                     compound (COMP).
-	 * @param _growthToken The ERC-20 token address of the associated
-	 *                     gToken, for gcTokens Type 2, or address(0),
-	 *                     if this contract is a gcToken Type 1.
+	 *                      token (e.g. aLINK for gacLINK).
+	 * @param _growthToken The ERC-20 token address of the associated gToken.
 	 */
-	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _miningToken, address _growthToken)
+	constructor (string memory _name, string memory _symbol, uint8 _decimals, address _stakesToken, address _reserveToken, address _growthToken)
 		GTokenBase(_name, _symbol, _decimals, _stakesToken, _reserveToken) public
 	{
-		miningToken = _miningToken;
+		miningToken = address(0);
 		growthToken = _growthToken;
-		address _underlyingToken = GC.getUnderlyingToken(_reserveToken);
+		address _underlyingToken = GA.getUnderlyingToken(_reserveToken);
 		underlyingToken = _underlyingToken;
 	}
 
 	/**
-	 * @notice Allows for the beforehand calculation of the cToken amount
+	 * @notice Allows for the beforehand calculation of the aToken amount
 	 *         given the amount of the underlying token and an exchange rate.
-	 * @param _underlyingCost The cost in terms of the cToken underlying asset.
+	 * @param _underlyingCost The cost in terms of the aToken underlying asset.
 	 * @param _exchangeRate The given exchange rate as provided by exchangeRate().
-	 * @return _cost The equivalent cost in terms of cToken
+	 * @return _cost The equivalent cost in terms of aToken
 	 */
 	function calcCostFromUnderlyingCost(uint256 _underlyingCost, uint256 _exchangeRate) public pure override returns (uint256 _cost)
 	{
@@ -65,10 +61,10 @@ abstract contract GCTokenBase is GTokenBase, GCToken, GMining
 
 	/**
 	 * @notice Allows for the beforehand calculation of the underlying token
-	 *         amount given the cToken amount and an exchange rate.
-	 * @param _cost The cost in terms of the cToken.
+	 *         amount given the aToken amount and an exchange rate.
+	 * @param _cost The cost in terms of the aToken.
 	 * @param _exchangeRate The given exchange rate as provided by exchangeRate().
-	 * @return _underlyingCost The equivalent cost in terms of the cToken underlying asset.
+	 * @return _underlyingCost The equivalent cost in terms of the aToken underlying asset.
 	 */
 	function calcUnderlyingCostFromCost(uint256 _cost, uint256 _exchangeRate) public pure override returns (uint256 _underlyingCost)
 	{
@@ -145,13 +141,13 @@ abstract contract GCTokenBase is GTokenBase, GCToken, GMining
 	}
 
 	/**
-	 * @notice Provides the Compound exchange rate since their last update.
-	 * @return _exchangeRate The exchange rate between cToken and its
+	 * @notice Provides the Aave exchange rate since their last update.
+	 * @return _exchangeRate The exchange rate between aToken and its
 	 *                       underlying asset
 	 */
 	function exchangeRate() public view override returns (uint256 _exchangeRate)
 	{
-		return GC.getExchangeRate(reserveToken);
+		return GA.getExchangeRate(reserveToken);
 	}
 
 	/**
@@ -166,28 +162,28 @@ abstract contract GCTokenBase is GTokenBase, GCToken, GMining
 
 	/**
 	 * @notice Provides the total amount of the underlying asset (or equivalent)
-	 *         this contract is currently lending on Compound.
+	 *         this contract is currently lending on Aave.
 	 * @return _lendingReserveUnderlying The underlying asset lending
-	 *                                   balance on Compound.
+	 *                                   balance on Aave.
 	 */
 	function lendingReserveUnderlying() public view virtual override returns (uint256 _lendingReserveUnderlying)
 	{
-		return GC.getLendAmount(reserveToken);
+		return GA.getLendAmount(reserveToken);
 	}
 
 	/**
 	 * @notice Provides the total amount of the underlying asset (or equivalent)
-	 *         this contract is currently borrowing on Compound.
+	 *         this contract is currently borrowing on Aave.
 	 * @return _borrowingReserveUnderlying The underlying asset borrowing
-	 *                                     balance on Compound.
+	 *                                     balance on Aave.
 	 */
 	function borrowingReserveUnderlying() public view virtual override returns (uint256 _borrowingReserveUnderlying)
 	{
-		return GC.getBorrowAmount(reserveToken);
+		return GA.getBorrowAmount(reserveToken);
 	}
 
 	/**
-	 * @notice Performs the minting of gcToken shares upon the deposit of the
+	 * @notice Performs the minting of gaToken shares upon the deposit of the
 	 *         cToken underlying asset. The funds will be pulled in by this
 	 *         contract, therefore they must be previously approved. This
 	 *         function builds upon the GTokenBase deposit function. See
@@ -203,18 +199,18 @@ abstract contract GCTokenBase is GTokenBase, GCToken, GMining
 		(uint256 _netShares, uint256 _feeShares) = GFormulae._calcDepositSharesFromCost(_cost, totalReserve(), totalSupply(), depositFee());
 		require(_netShares > 0, "shares must be greater than 0");
 		G.pullFunds(underlyingToken, _from, _underlyingCost);
-		GC.safeLend(reserveToken, _underlyingCost);
+		GA.safeLend(reserveToken, _underlyingCost);
 		require(_prepareDeposit(_cost), "not available at the moment");
 		_mint(_from, _netShares);
 		_mint(address(this), _feeShares.div(2));
 	}
 
 	/**
-	 * @notice Performs the burning of gcToken shares upon the withdrawal of
+	 * @notice Performs the burning of gaToken shares upon the withdrawal of
 	 *         the underlying asset. This function builds upon the
 	 *         GTokenBase withdrawal function. See GTokenBase.sol for
 	 *         further documentation.
-	 * @param _grossShares The gross amount of this gcToken shares being
+	 * @param _grossShares The gross amount of this gaToken shares being
 	 *                     redeemed in the operation.
 	 */
 	function withdrawUnderlying(uint256 _grossShares) public override nonReentrant
@@ -225,8 +221,8 @@ abstract contract GCTokenBase is GTokenBase, GCToken, GMining
 		uint256 _underlyingCost = GCFormulae._calcUnderlyingCostFromCost(_cost, exchangeRate());
 		require(_underlyingCost > 0, "underlying cost must be greater than 0");
 		require(_prepareWithdrawal(_cost), "not available at the moment");
-		_underlyingCost = G.min(_underlyingCost, GC.fetchLendAmount(reserveToken));
-		GC.safeRedeem(reserveToken, _underlyingCost);
+		_underlyingCost = G.min(_underlyingCost, GA.fetchLendAmount(reserveToken));
+		GA.safeRedeem(reserveToken, _underlyingCost);
 		G.pushFunds(underlyingToken, _from, _underlyingCost);
 		_burn(_from, _grossShares);
 		_mint(address(this), _feeShares.div(2));
