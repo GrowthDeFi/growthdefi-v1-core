@@ -37,6 +37,25 @@ library UniswapV2LiquidityPoolAbstraction
 		return _shares;
 	}
 
+	function _exitPool(address _pair, address _token, uint256 _shares, uint256 _minAmount) internal returns (uint256 _amount)
+	{
+		if (_shares == 0) return 0;
+		address _router = $.UniswapV2_ROUTER02;
+		address _token0 = Pair(_pair).token0();
+		address _token1 = Pair(_pair).token1();
+		address _otherToken = _token == _token0 ? _token1 : _token0;
+		Transfers._approveFunds(_pair, _router, _shares);
+		(uint256 _baseAmount, uint256 _swapAmount) = Router02(_router).removeLiquidity(_token, _otherToken, _shares, 1, 1, address(this), uint256(-1));
+		Transfers._approveFunds(_otherToken, _router, _swapAmount);
+		address[] memory _path = new address[](2);
+		_path[0] = _otherToken;
+		_path[1] = _token;
+		uint256 _additionalAmount = Router02(_router).swapExactTokensForTokens(_swapAmount, 1, _path, address(this), uint256(-1))[_path.length - 1];
+		_amount = _baseAmount.add(_additionalAmount);
+	        require(_amount >= _minAmount, "high slippage");
+		return _amount;
+	}
+
 	function _calcSwapOutputFromInput(uint256 _reserveAmount, uint256 _inputAmount) internal pure returns (uint256)
 	{
 		return Math._sqrt(_reserveAmount.mul(_inputAmount.mul(3988000).add(_reserveAmount.mul(3988009)))).sub(_reserveAmount.mul(1997)) / 1994;

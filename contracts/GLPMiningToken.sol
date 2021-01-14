@@ -84,6 +84,25 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		_burn(_from, _shares);
 	}
 
+	function depositToken(address _token, uint256 _amount, uint256 _minShares) external /*override*/ nonReentrant
+	{
+		address _from = msg.sender;
+		Transfers._pullFunds(_token, _from, _amount);
+		uint256 _minCost = calcCostFromShares(_minShares);
+		uint256 _cost = UniswapV2LiquidityPoolAbstraction._joinPool(reserveToken, _token, _amount, _minCost);
+		uint256 _shares = calcSharesFromCost(_cost);
+		_mint(_from, _shares);
+	}
+
+	function withdrawToken(address _token, uint256 _shares, uint256 _minAmount) external /*override*/ nonReentrant
+	{
+		address _from = msg.sender;
+		uint256 _cost = calcCostFromShares(_shares);
+		uint256 _amount = UniswapV2LiquidityPoolAbstraction._exitPool(reserveToken, _token, _cost, _minAmount);
+		Transfers._pushFunds(_token, _from, _amount);
+		_burn(_from, _shares);
+	}
+
 	function gulpRewards() external /*override*/ nonReentrant
 	{
 		_updateRewards();
