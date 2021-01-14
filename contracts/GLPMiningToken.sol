@@ -90,7 +90,7 @@ contract GLPMiningToken is ERC20, Ownable, ReentrancyGuard//, GToken, GStaking
 		Transfers._pullFunds(_token, _from, _amount);
 		uint256 _minCost = calcCostFromShares(_minShares);
 		uint256 _cost = UniswapV2LiquidityPoolAbstraction._joinPool(reserveToken, _token, _amount, _minCost);
-		uint256 _shares = calcSharesFromCost(_cost);
+		uint256 _shares = _cost.mul(totalSupply()).div(totalReserve().sub(_cost));
 		_mint(_from, _shares);
 	}
 
